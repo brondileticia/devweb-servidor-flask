@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Flasky - Identificação{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Avaliação contínua: Aula 040</h1>
+    <h2>Identificação</h2>
+</div>
+
+<div class="panel panel-primary">
+    <div class="panel-heading">
+        <h3 class="panel-title">Dados do Aluno</h3>
+    </div>
+    <div class="panel-body">
+        <p>Olá, <strong>{{ aluno.nome }}</strong>!</p>
+        <p>Prontuário: <strong>{{ aluno.prontuario }}</strong></p>
+        <p>Instituição: <strong>{{ aluno.instituicao }}</strong></p>
+    </div>
+</div>
+{% endblock %}
