@@ -1,15 +1,16 @@
 {% extends "bootstrap/base.html" %}
 
-{% block title %}Flasky{% endblock %}
+{% block title %}PTBDSWS - Flask{% endblock %}
 
 {% block head %}
 {{ super() }}
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
 {% endblock %}
 
 {% block navbar %}
-<div class="navbar navbar-inverse" role="navigation">
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="container">
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -18,18 +19,39 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="/">Avaliação contínua: Aula 040</a>
+            <a class="navbar-brand" href="/">
+                <span class="glyphicon glyphicon-education"></span> Avaliação contínua: Aula 040
+            </a>
         </div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <li {% if titulo == 'Home' %}class="active"{% endif %}>
-                    <a href="/">Home</a>
+                    <a href="/">
+                        <span class="glyphicon glyphicon-home"></span> Home
+                    </a>
                 </li>
                 <li {% if titulo == 'Identificação' %}class="active"{% endif %}>
-                    <a href="/identificacao">Identificação</a>
+                    <a href="/identificacao">
+                        <span class="glyphicon glyphicon-user"></span> Identificação
+                    </a>
                 </li>
                 <li {% if titulo == 'Contexto da requisição' %}class="active"{% endif %}>
-                    <a href="/contextorequisicao">Contexto da requisição</a>
+                    <a href="/contextorequisicao">
+                        <span class="glyphicon glyphicon-info-sign"></span> Contexto da requisição
+                    </a>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <span class="glyphicon glyphicon-cog"></span> <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="https://ptb.ifsp.edu.br/" target="_blank">IFSP - Campus Pirituba</a></li>
+                        <li><a href="https://www.pythonanywhere.com/" target="_blank">PythonAnywhere</a></li>
+                        <li class="divider"></li>
+                        <li><a href="https://flask.palletsprojects.com/" target="_blank">Documentação Flask</a></li>
+                    </ul>
                 </li>
             </ul>
         </div>
@@ -38,12 +60,61 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container" style="margin-top: 70px;">
+    {# Mensagens flash para feedback do usuário #}
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        {{ message }}
+    </div>
+    {% endfor %}
+
     {% block page_content %}{% endblock %}
 </div>
+
+{# Rodapé personalizado #}
+<footer class="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="text-muted">
+                    <strong>PTBDSWS</strong> - Programação em Desenvolvimento Web Servidor
+                </p>
+                <p class="text-muted small">
+                    4º Semestre - Análise e Desenvolvimento de Sistemas
+                </p>
+            </div>
+            <div class="col-md-6 text-right">
+                <p class="text-muted">
+                    <span class="glyphicon glyphicon-time"></span> 
+                    Servidor: {{ moment().format('DD/MM/YYYY HH:mm:ss') }}
+                </p>
+                <p class="text-muted small">
+                    Flask {{ flask_version }} | Bootstrap 3 | PythonAnywhere
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 {{ moment.include_moment() }}
+{{ moment.locale('pt-br') }}
+<script>
+    // Script para ativar tooltips do Bootstrap
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+    
+    // Script para fechar alertas automaticamente após 5 segundos
+    $(document).ready(function() {
+        setTimeout(function() {
+            $(".alert").alert('close');
+        }, 5000);
+    });
+</script>
 {% endblock %}
