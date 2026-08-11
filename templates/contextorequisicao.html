@@ -1,21 +1,161 @@
 {% extends "base.html" %}
 
-{% block title %}Flasky - Contexto da Requisição{% endblock %}
+{% block title %}PTBDSWS - Contexto da Requisição{% endblock %}
 
 {% block page_content %}
 <div class="page-header">
     <h1>Avaliação contínua: Aula 040</h1>
-    <h2>Contexto da requisição</h2>
+    <p class="lead">Contexto da Requisição HTTP</p>
 </div>
 
-<div class="panel panel-info">
-    <div class="panel-heading">
-        <h3 class="panel-title">Olá, {{ aluno.nome }}!</h3>
+<div class="row">
+    <div class="col-md-6">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-send"></span> 
+                    Dados da Requisição
+                </h3>
+            </div>
+            <div class="panel-body">
+                <h4>Olá, {{ aluno.nome.split()[0] }}!</h4>
+                <p>Abaixo estão os detalhes técnicos da sua requisição:</p>
+                
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <h4 class="list-group-item-heading">
+                            <span class="glyphicon glyphicon-hdd"></span> 
+                            Navegador (User-Agent)
+                        </h4>
+                        <p class="list-group-item-text text-muted small" style="word-wrap: break-word;">
+                            {{ user_agent }}
+                        </p>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <h4 class="list-group-item-heading">
+                            <span class="glyphicon glyphicon-cloud"></span> 
+                            IP do Computador Remoto
+                        </h4>
+                        <p class="list-group-item-text">
+                            <code>{{ remote_ip }}</code>
+                        </p>
+                    </div>
+                    
+                    <div class="list-group-item">
+                        <h4 class="list-group-item-heading">
+                            <span class="glyphicon glyphicon-globe"></span> 
+                            Host da Aplicação
+                        </h4>
+                        <p class="list-group-item-text">
+                            <code>{{ host }}</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="panel-body">
-        <p><strong>Seu navegador é:</strong> {{ user_agent }}</p>
-        <p><strong>O IP do computador remoto é:</strong> {{ remote_ip }}</p>
-        <p><strong>O host da aplicação é:</strong> {{ host }}</p>
+    
+    <div class="col-md-6">
+        {# Detalhamento do User-Agent #}
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-search"></span> 
+                    Análise do Navegador
+                </h3>
+            </div>
+            <div class="panel-body">
+                {% if 'Chrome' in user_agent %}
+                    <div class="alert alert-success">
+                        <span class="glyphicon glyphicon-ok"></span> 
+                        Você está usando <strong>Google Chrome</strong>
+                        {% if '151.0.0.0' in user_agent %}
+                            <span class="badge">Versão 151</span>
+                        {% endif %}
+                    </div>
+                {% elif 'Firefox' in user_agent %}
+                    <div class="alert alert-warning">
+                        <span class="glyphicon glyphicon-ok"></span> 
+                        Você está usando <strong>Mozilla Firefox</strong>
+                    </div>
+                {% elif 'Safari' in user_agent and 'Chrome' not in user_agent %}
+                    <div class="alert alert-info">
+                        <span class="glyphicon glyphicon-ok"></span> 
+                        Você está usando <strong>Safari</strong>
+                    </div>
+                {% else %}
+                    <div class="alert alert-default">
+                        Navegador não identificado especificamente
+                    </div>
+                {% endif %}
+                
+                {% if 'Windows' in user_agent %}
+                    <p><span class="glyphicon glyphicon-laptop"></span> Sistema Operacional: <strong>Windows</strong></p>
+                {% elif 'Linux' in user_agent %}
+                    <p><span class="glyphicon glyphicon-console"></span> Sistema Operacional: <strong>Linux</strong></p>
+                {% elif 'Mac' in user_agent %}
+                    <p><span class="glyphicon glyphicon-apple"></span> Sistema Operacional: <strong>macOS</strong></p>
+                {% endif %}
+            </div>
+        </div>
+        
+        {# Dicas de rede #}
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-signal"></span> 
+                    Informações de Rede
+                </h3>
+            </div>
+            <div class="panel-body">
+                <p><strong>Endereço IP:</strong> {{ remote_ip }}</p>
+                <p>
+                    <strong>Tipo de IP:</strong> 
+                    {% if remote_ip.startswith('10.') or remote_ip.startswith('192.168.') or remote_ip.startswith('172.') %}
+                        <span class="label label-warning">IP Privado</span>
+                    {% else %}
+                        <span class="label label-info">IP Público</span>
+                    {% endif %}
+                </p>
+                <p><strong>Host:</strong> {{ host }}</p>
+                {% if 'pythonanywhere' in host %}
+                    <p><span class="label label-success">PythonAnywhere</span></p>
+                {% elif 'localhost' in host %}
+                    <p><span class="label label-default">Servidor Local</span></p>
+                {% endif %}
+            </div>
+        </div>
+        
+        {# Tabela de cabeçalhos HTTP #}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-list-alt"></span> 
+                    Cabeçalhos HTTP Comuns
+                </h3>
+            </div>
+            <div class="panel-body">
+                <table class="table table-condensed table-bordered">
+                    <tr>
+                        <th>Método</th>
+                        <td><span class="label label-primary">GET</span></td>
+                    </tr>
+                    <tr>
+                        <th>Host</th>
+                        <td>{{ host }}</td>
+                    </tr>
+                    <tr>
+                        <th>Protocolo</th>
+                        <td>HTTP/1.1</td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td><span class="label label-success">200 OK</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
