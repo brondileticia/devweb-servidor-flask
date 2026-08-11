@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Flasky - Contexto da Requisição{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Avaliação contínua: Aula 040</h1>
+    <h2>Contexto da requisição</h2>
+</div>
+
+<div class="panel panel-info">
+    <div class="panel-heading">
+        <h3 class="panel-title">Olá, {{ aluno.nome }}!</h3>
+    </div>
+    <div class="panel-body">
+        <p><strong>Seu navegador é:</strong> {{ user_agent }}</p>
+        <p><strong>O IP do computador remoto é:</strong> {{ remote_ip }}</p>
+        <p><strong>O host da aplicação é:</strong> {{ host }}</p>
+    </div>
+</div>
+{% endblock %}
