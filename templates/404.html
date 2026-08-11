@@ -1,11 +1,37 @@
 {% extends "base.html" %}
 
-{% block title %}Flasky - Página não encontrada{% endblock %}
+{% block title %}PTBDSWS - Página não encontrada{% endblock %}
 
 {% block page_content %}
 <div class="page-header">
     <h1>404 - Página não encontrada</h1>
-    <p>A página que você procura não existe.</p>
-    <a href="/" class="btn btn-primary">Voltar para Home</a>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="alert alert-danger text-center">
+            <span class="glyphicon glyphicon-exclamation-sign" style="font-size: 48px;"></span>
+            <h2>Oops!</h2>
+            <p class="lead">A página que você está procurando não existe ou foi movida.</p>
+            <hr>
+            <p>Verifique se a URL está correta ou volte para a página inicial.</p>
+            <a href="/" class="btn btn-primary btn-lg">
+                <span class="glyphicon glyphicon-home"></span> Voltar para Home
+            </a>
+        </div>
+        
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Possíveis causas:</h3>
+            </div>
+            <div class="panel-body">
+                <ul>
+                    <li>URL digitada incorretamente</li>
+                    <li>Link desatualizado ou quebrado</li>
+                    <li>Página foi removida do servidor</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
