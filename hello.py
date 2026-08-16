@@ -1,5 +1,5 @@
 """
-Aplicação Flask - Avaliação Contínua: Aula 040
+Aplicação Flask - Avaliação Contínua
 Disciplina: PTBDSWS - Programação em Desenvolvimento Web Servidor
 Aluno: Leticia Brondi
 Instituição: IFSP - Campus Pirituba
@@ -42,7 +42,7 @@ moment = Moment(app)
 
 ALUNO = {
     'nome': 'Leticia Brondi',
-    'prontuario': 'SEU_PRONTUARIO',  # Atualize com seu prontuário
+    'prontuario': 'PT3037801',  # Atualize com seu prontuário
     'instituicao': 'IFSP',
     'curso': 'Análise e Desenvolvimento de Sistemas',
     'semestre': '4º Semestre',
