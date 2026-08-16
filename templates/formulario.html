@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}PTBDSWS - Formulário{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Formulário de Nome</h1>
+    <p class="lead">Digite seu nome abaixo e veja a mágica acontecer!</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        
+        {# Área que mostra o nome (se existir) #}
+        {% if nome %}
+        <div class="alert alert-success text-center" role="alert">
+            <h2 style="margin-top: 0;">
+                Hello, {{ nome }}!
+            </h2>
+            <p class="text-muted">Bem-vindo(a) de volta!</p>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <h2 style="margin-top: 0;">
+                Hello!
+            </h2>
+            <p class="text-muted">Aguardando você digitar seu nome...</p>
+        </div>
+        {% endif %}
+        
+        {# Formulário #}
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-pencil"></span> 
+                    What is your name?
+                </h3>
+            </div>
+            <div class="panel-body">
+                <form method="POST" action="{{ url_for('formulario') }}" class="form-inline">
+                    <div class="form-group">
+                        <label class="sr-only" for="nome">Nome</label>
+                        <div class="input-group">
+                            <div class="input-group-addon">
+                                <span class="glyphicon glyphicon-user"></span>
+                            </div>
+                            <input type="text" 
+                                   class="form-control input-lg" 
+                                   id="nome" 
+                                   name="nome" 
+                                   placeholder="Digite seu nome" 
+                                   value="{{ nome if nome else '' }}"
+                                   required
+                                   autofocus>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <span class="glyphicon glyphicon-ok"></span> Enviar
+                    </button>
+                </form>
+                
+                {% if nome %}
+                <hr>
+                <a href="{{ url_for('formulario', limpar='true') }}" 
+                   class="btn btn-default btn-sm"
+                   onclick="return confirmarLimpeza()">
+                    <span class="glyphicon glyphicon-trash"></span> Limpar nome
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        {# Informações adicionais #}
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-info-sign"></span> 
+                    Como funciona
+                </h3>
+            </div>
+            <div class="panel-body">
+                <ul>
+                    <li>O nome é armazenado na <strong>sessão</strong> do servidor</li>
+                    <li>Quando você envia um nome novo, o servidor detecta a mudança</li>
+                    <li>Um alerta é exibido informando a alteração</li>
+                    <li>O padrão PRG (Post/Redirect/Get) evita reenvio acidental</li>
+                </ul>
+            </div>
+        </div>
+        
+        {# Histórico de nomes (bônus) #}
+        {% if session.get('historico_nomes') %}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-time"></span> 
+                    Histórico de nomes
+                </h3>
+            </div>
+            <div class="panel-body">
+                <ul class="list-group">
+                    {% for nome_historico in session.get('historico_nomes', []) %}
+                    <li class="list-group-item">
+                        <span class="glyphicon glyphicon-chevron-right"></span>
+                        {{ nome_historico }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Função para confirmar limpeza do nome
+    function confirmarLimpeza() {
+        return confirm('Tem certeza que deseja limpar o nome?');
+    }
+    
+    // Auto-submit quando o campo perder o foco (opcional)
+    $(document).ready(function() {
+        $('#nome').blur(function() {
+            var nome = $(this).val().trim();
+            if (nome !== '' && nome !== '{{ nome }}') {
+                // Opcional: auto-enviar quando o nome mudar
+                // $(this).closest('form').submit();
+            }
+        });
+    });
+</script>
+{% endblock %}
