@@ -1,10 +1,11 @@
 from datetime import datetime
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, flash, redirect, url_for
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
-import flask  # Para pegar a versão do Flask
+import flask
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'chave-secreta-para-sessoes'  # Necessário para session e flash
 
 bootstrap = Bootstrap(app)
 moment = Moment(app)
@@ -16,7 +17,7 @@ ALUNO = {
     'instituicao': 'IFSP'
 }
 
-# Context processor para injetar variáveis globais em todos os templates
+# Context processor para injetar variáveis globais
 @app.context_processor
 def inject_globals():
     return {
@@ -57,6 +58,52 @@ def contextorequisicao():
                          remote_ip=remote_ip,
                          host=host,
                          titulo='Contexto da requisição')
+
+# ============ NOVA ROTA PARA O FORMULÁRIO ============
+@app.route('/formulario', methods=['GET', 'POST'])
+def formulario():
+    """
+    Rota que recebe um nome via formulário.
+    - GET: Mostra o formulário
+    - POST: Processa o nome enviado
+    """
+    nome_atual = None
+    nome_anterior = None
+    nome_mudou = False
+    
+    if request.method == 'POST':
+        # Pega o nome enviado pelo formulário
+        novo_nome = request.form.get('nome', '').strip()
+        
+        # Verifica se já existe um nome na sessão
+        if 'nome_usuario' in session:
+            nome_anterior = session['nome_usuario']
+            
+            # Verifica se o nome mudou
+            if nome_anterior != novo_nome and novo_nome != '':
+                nome_mudou = True
+                flash(f'O nome foi alterado de "{nome_anterior}" para "{novo_nome}"!', 'warning')
+        
+        # Atualiza a sessão com o novo nome
+        if novo_nome != '':
+            session['nome_usuario'] = novo_nome
+            nome_atual = novo_nome
+        else:
+            # Se o campo estiver vazio, remove da sessão
+            session.pop('nome_usuario', None)
+            nome_atual = None
+        
+        # Redireciona para evitar reenvio do formulário (PRG pattern)
+        return redirect(url_for('formulario'))
+    
+    else:
+        # GET: Pega o nome da sessão (se existir)
+        nome_atual = session.get('nome_usuario', None)
+    
+    return render_template('formulario.html',
+                         nome=nome_atual,
+                         nome_mudou=nome_mudou,
+                         titulo='Formulário')
 
 @app.route('/user/<name>')
 def user(name):
