@@ -1,3 +1,7 @@
-flask
-flask-bootstrap
-flask-moment
+Flask==2.3.3
+Flask-Bootstrap==3.3.7.1
+Flask-Moment==1.0.5
+Werkzeug==2.3.7
+Jinja2==3.1.2
+itsdangerous==2.1.2
+click==8.1.7
