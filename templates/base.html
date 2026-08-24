@@ -26,50 +26,44 @@
         </div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
+                {# Link para Home sempre visível #}
                 <li {% if titulo == 'Home' %}class="active"{% endif %}>
                     <a href="/">
                         <span class="glyphicon glyphicon-home"></span> Home
                     </a>
                 </li>
-                <li {% if titulo == 'Data e Hora' %}class="active"{% endif %}>
-                    <a href="/data-hora">
-                        <span class="glyphicon glyphicon-time"></span> Data e Hora
-                    </a>
-                </li>
-                <li {% if titulo == 'Formulário de Identificação' %}class="active"{% endif %}>
-                    <a href="/formulario-identificacao">
-                        <span class="glyphicon glyphicon-edit"></span> Formulário de Identificação
-                    </a>
-                </li>
-                <li {% if titulo == 'Login' %}class="active"{% endif %}>
-                    <a href="/login">
-                        <span class="glyphicon glyphicon-log-in"></span> Login
-                    </a>
-                </li>
             </ul>
+            
             <ul class="nav navbar-nav navbar-right">
+                {# Perfil do usuário (login/logout) #}
+                {% if session.get('usuario_logado') %}
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        <span class="glyphicon glyphicon-th-large"></span> 
-                        Mais <b class="caret"></b>
+                        <span class="glyphicon glyphicon-user"></span> 
+                        {{ session.get('usuario_logado') }}
+                        <b class="caret"></b>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a href="/identificacao">
-                            <span class="glyphicon glyphicon-user"></span> Identificação
-                        </a></li>
-                        <li><a href="/contextorequisicao">
-                            <span class="glyphicon glyphicon-info-sign"></span> Contexto da Requisição
-                        </a></li>
-                        <li><a href="/formulario">
-                            <span class="glyphicon glyphicon-pencil"></span> Formulário Simples
-                        </a></li>
+                        <li>
+                            <a href="/formulario-identificacao">
+                                <span class="glyphicon glyphicon-edit"></span> 
+                                Meus Dados
+                            </a>
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href="/logout">
+                                <span class="glyphicon glyphicon-log-out"></span> 
+                                Sair
+                            </a>
+                        </li>
                     </ul>
                 </li>
-                {% if session.get('usuario_logado') %}
-                <li>
-                    <a href="/logout">
-                        <span class="glyphicon glyphicon-log-out"></span> 
-                        Sair ({{ session.get('usuario_logado') }})
+                {% else %}
+                <li {% if titulo == 'Login' %}class="active"{% endif %}>
+                    <a href="/login">
+                        <span class="glyphicon glyphicon-log-in"></span> 
+                        Login
                     </a>
                 </li>
                 {% endif %}
@@ -103,7 +97,7 @@
         <div class="row">
             <div class="col-md-6">
                 <p class="text-muted">
-                    <strong>PTBDSWS</strong> -  Desenvolvimento Web Servidor
+                    <strong>PTBDSWS</strong> - Desenvolvimento Web Servidor
                 </p>
             </div>
             <div class="col-md-6 text-right">
