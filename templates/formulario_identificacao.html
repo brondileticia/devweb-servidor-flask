@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}PTBDSWS - Formulário de Identificação{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Formulário de Identificação</h1>
+    <p class="lead">Informe seus dados para personalizar a experiência</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        {# Informações do usuário #}
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-user"></span> 
+                    Informações do Usuário
+                </h3>
+            </div>
+            <div class="panel-body">
+                {% if nome_completo %}
+                    <h2>Olá, {{ nome_completo }}!</h2>
+                {% else %}
+                    <h2>Olá, Estranho!</h2>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>A sua Instituição de ensino é:</strong> 
+                            {% if instituicao %}
+                                <span class="text-success">{{ instituicao }}</span>
+                            {% else %}
+                                <span class="text-muted">None</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Está cursando a disciplina de:</strong> 
+                            {% if disciplina %}
+                                <span class="text-success">{{ disciplina }}</span>
+                            {% else %}
+                                <span class="text-muted">Nenhuma selecionada</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>O IP do computador remoto é:</strong> 
+                            {% if remote_ip %}
+                                <code>{{ remote_ip }}</code>
+                            {% else %}
+                                <span class="text-muted">None</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>O host da aplicação é:</strong> 
+                            {% if host %}
+                                <code>{{ host }}</code>
+                            {% else %}
+                                <span class="text-muted">None</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# Formulário de identificação #}
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-edit"></span> 
+                    Preencha seus dados
+                </h3>
+            </div>
+            <div class="panel-body">
+                <form method="POST" action="/formulario-identificacao">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="nome">Informe o seu nome:</label>
+                                <input type="text" 
+                                       class="form-control input-lg" 
+                                       id="nome" 
+                                       name="nome" 
+                                       value="{{ nome }}"
+                                       placeholder="Digite seu nome"
+                                       required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="sobrenome">Informe o seu sobrenome:</label>
+                                <input type="text" 
+                                       class="form-control input-lg" 
+                                       id="sobrenome" 
+                                       name="sobrenome" 
+                                       value="{{ sobrenome }}"
+                                       placeholder="Digite seu sobrenome"
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="instituicao">Informe a sua Instituição de ensino:</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="instituicao" 
+                               name="instituicao" 
+                               value="{{ instituicao if instituicao else '' }}"
+                               placeholder="Ex: IFSP">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="disciplina">Informe a sua disciplina:</label>
+                        <select class="form-control" id="disciplina" name="disciplina">
+                            <option value="">Selecione uma disciplina...</option>
+                            {% for disc in disciplinas %}
+                            <option value="{{ disc }}" {% if disciplina == disc %}selected{% endif %}>
+                                {{ disc }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning btn-lg">
+                        <span class="glyphicon glyphicon-save"></span> Salvar Informações
+                    </button>
+                    
+                    {% if nome_completo %}
+                    <a href="/logout" class="btn btn-default btn-lg">
+                        <span class="glyphicon glyphicon-erase"></span> Limpar Dados
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        {# Data e hora #}
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-time"></span> 
+                    Data e Hora
+                </h3>
+            </div>
+            <div class="panel-body text-center">
+                <p><strong>The local date and time is:</strong></p>
+                <p class="text-success lead">
+                    {{ moment(current_time).format('LLLL') }}
+                </p>
+                <p>That was {{ moment(current_time).fromNow(refresh=True) }}.</p>
+            </div>
+        </div>
+        
+        {# Status da sessão #}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-info-sign"></span> 
+                    Status
+                </h3>
+            </div>
+            <div class="panel-body">
+                <ul class="list-unstyled">
+                    <li><strong>Usuário:</strong> 
+                        {% if session.get('usuario_logado') %}
+                            <span class="text-success">Logado</span>
+                        {% else %}
+                            <span class="text-muted">Não logado</span>
+                        {% endif %}
+                    </li>
+                    <li><strong>Nome:</strong> 
+                        {{ nome_completo if nome_completo else 'Não informado' }}
+                    </li>
+                    <li><strong>Instituição:</strong> 
+                        {{ instituicao if instituicao else 'Não informada' }}
+                    </li>
+                    <li><strong>Disciplina:</strong> 
+                        {{ disciplina if disciplina else 'Não informada' }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <a href="/" class="btn btn-default btn-block">
+            <span class="glyphicon glyphicon-arrow-left"></span> 
+            Voltar para Home
+        </a>
+    </div>
+</div>
+{% endblock %}
