@@ -1,4 +1,4 @@
-/* Estilos personalizados para a aplicação */
+/* Estilos personalizados */
 body {
     padding-bottom: 70px;
     background-color: #f8f9fa;
@@ -36,74 +36,16 @@ body {
     color: white;
 }
 
-.panel-primary > .panel-heading {
-    background-color: #3498db;
-    border-color: #2980b9;
+/* Cards com hover */
+.card-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
 }
 
-.panel-success > .panel-heading {
-    background-color: #27ae60;
-    border-color: #229954;
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
 }
 
-.panel-info > .panel-heading {
-    background-color: #2980b9;
-    border-color: #2471a3;
-}
-
-.panel-warning > .panel-heading {
-    background-color: #f39c12;
-    border-color: #d68910;
-}
-
-.well {
-    background-color: #ecf0f1;
-    border: 1px solid #d5dbdb;
-}
-
-.alert {
-    border-radius: 4px;
-}
-
-.progress {
-    height: 25px;
-}
-
-.progress-bar {
-    line-height: 25px;
-    font-weight: bold;
-}
-
-/* Animações */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.page-header {
-    animation: fadeIn 0.5s ease-in;
-}
-
-.panel {
-    animation: fadeIn 0.7s ease-in;
-    transition: box-shadow 0.3s ease;
-}
-
-.panel:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-/* Responsividade extra */
-@media (max-width: 768px) {
-    .footer {
-        position: relative;
-    }
-    
-    body {
-        padding-bottom: 0;
-    }
-    
-    .page-header h1 {
-        font-size: 24px;
-    }
-}
+/* Painéis coloridos */
+.panel-primary > .
