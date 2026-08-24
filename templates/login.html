@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}PTBDSWS - Login{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Avaliação contínua: Aula 050.B</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        {# Formulário de Login #}
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-log-in"></span> 
+                    Login
+                </h3>
+            </div>
+            <div class="panel-body">
+                <form method="POST" action="/login">
+                    <div class="form-group">
+                        <label for="usuario">
+                            <span class="glyphicon glyphicon-user"></span> 
+                            Usuário ou e-mail
+                        </label>
+                        <input type="text" 
+                               class="form-control input-lg" 
+                               id="usuario" 
+                               name="usuario" 
+                               placeholder="Digite seu usuário ou email"
+                               required
+                               autofocus>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="senha">
+                            <span class="glyphicon glyphicon-lock"></span> 
+                            Informe a sua senha
+                        </label>
+                        <input type="password" 
+                               class="form-control input-lg" 
+                               id="senha" 
+                               name="senha" 
+                               placeholder="Digite sua senha"
+                               required>
+                    </div>
+                    
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="lembrar"> Lembrar-me
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">
+                        <span class="glyphicon glyphicon-send"></span> Enviar
+                    </button>
+                </form>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p class="text-muted">Credenciais de teste:</p>
+                    <p><strong>Usuário:</strong> admin<br>
+                    <strong>Senha:</strong> 123456</p>
+                </div>
+            </div>
+        </div>
+        
+        {# Data e hora #}
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-time"></span> 
+                    Data e Hora
+                </h3>
+            </div>
+            <div class="panel-body text-center">
+                <p><strong>The local date and time is:</strong></p>
+                <p class="text-success lead">
+                    {{ moment(current_time).format('LLLL') }}
+                </p>
+                <p>That was {{ moment(current_time).fromNow(refresh=True) }}.</p>
+            </div>
+        </div>
+        
+        {# Link para voltar #}
+        <div class="text-center">
+            <a href="/" class="btn btn-default">
+                <span class="glyphicon glyphicon-arrow-left"></span> 
+                Voltar para Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
