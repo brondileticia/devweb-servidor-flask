@@ -51,7 +51,7 @@ def inject_globals():
         'flask_version': flask.__version__,
         'aluno': ALUNO,
         'ano_atual': datetime.now().year,
-        'app_name': 'Avaliação contínua: Aula 050.B'
+        'app_name': 'Avaliações contínuas, 2026'
     }
 
 # ============ TRATAMENTO DE ERROS ============
@@ -78,48 +78,42 @@ def home():
             'descricao': 'Visualize data, hora e informações temporais',
             'url': '/data-hora',
             'icone': 'glyphicon-time',
-            'cor': 'panel-primary',
-            'aula': 'Aula 040'
+            'cor': 'panel-primary'
         },
         {
             'titulo': 'Identificação do Aluno',
             'descricao': 'Dados de identificação do aluno e instituição',
             'url': '/identificacao',
             'icone': 'glyphicon-user',
-            'cor': 'panel-success',
-            'aula': 'Aula 040'
+            'cor': 'panel-success'
         },
         {
             'titulo': 'Contexto da Requisição',
             'descricao': 'Dados técnicos da requisição HTTP',
             'url': '/contextorequisicao',
             'icone': 'glyphicon-info-sign',
-            'cor': 'panel-info',
-            'aula': 'Aula 040'
+            'cor': 'panel-info'
         },
         {
             'titulo': 'Formulário de Identificação',
             'descricao': 'Formulário com nome, instituição e disciplina',
             'url': '/formulario-identificacao',
             'icone': 'glyphicon-edit',
-            'cor': 'panel-warning',
-            'aula': 'Aula 050.B'
+            'cor': 'panel-warning'
         },
         {
             'titulo': 'Login',
             'descricao': 'Sistema de autenticação de usuários',
             'url': '/login',
             'icone': 'glyphicon-log-in',
-            'cor': 'panel-danger',
-            'aula': 'Aula 050.B'
+            'cor': 'panel-danger'
         },
         {
             'titulo': 'Formulário Simples',
             'descricao': 'Formulário básico com sessão e flash messages',
             'url': '/formulario',
             'icone': 'glyphicon-pencil',
-            'cor': 'panel-default',
-            'aula': 'Extra'
+            'cor': 'panel-default'
         }
     ]
     
