@@ -20,7 +20,8 @@
                 <span class="icon-bar"></span>
             </button>
             <a class="navbar-brand" href="/">
-                <span class="glyphicon glyphicon-education"></span> Avaliação contínua
+                <span class="glyphicon glyphicon-education"></span> 
+                Avaliação contínua: Aula 050.B
             </a>
         </div>
         <div class="navbar-collapse collapse">
@@ -30,29 +31,45 @@
                         <span class="glyphicon glyphicon-home"></span> Home
                     </a>
                 </li>
-                <li {% if titulo == 'Identificação' %}class="active"{% endif %}>
-                    <a href="/identificacao">
-                        <span class="glyphicon glyphicon-user"></span> Identificação
+                <li {% if titulo == 'Data e Hora' %}class="active"{% endif %}>
+                    <a href="/data-hora">
+                        <span class="glyphicon glyphicon-time"></span> Data e Hora
                     </a>
                 </li>
-                <li {% if titulo == 'Contexto da requisição' %}class="active"{% endif %}>
-                    <a href="/contextorequisicao">
-                        <span class="glyphicon glyphicon-info-sign"></span> Contexto da requisição
+                <li {% if titulo == 'Formulário de Identificação' %}class="active"{% endif %}>
+                    <a href="/formulario-identificacao">
+                        <span class="glyphicon glyphicon-edit"></span> Formulário de Identificação
                     </a>
                 </li>
-                {# NOVO LINK #}
-                <li {% if titulo == 'Formulário' %}class="active"{% endif %}>
-                    <a href="/formulario">
-                        <span class="glyphicon glyphicon-pencil"></span> Formulário
+                <li {% if titulo == 'Login' %}class="active"{% endif %}>
+                    <a href="/login">
+                        <span class="glyphicon glyphicon-log-in"></span> Login
                     </a>
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                {% if session.get('nome_usuario') %}
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <span class="glyphicon glyphicon-th-large"></span> 
+                        Mais <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/identificacao">
+                            <span class="glyphicon glyphicon-user"></span> Identificação
+                        </a></li>
+                        <li><a href="/contextorequisicao">
+                            <span class="glyphicon glyphicon-info-sign"></span> Contexto da Requisição
+                        </a></li>
+                        <li><a href="/formulario">
+                            <span class="glyphicon glyphicon-pencil"></span> Formulário Simples
+                        </a></li>
+                    </ul>
+                </li>
+                {% if session.get('usuario_logado') %}
                 <li>
-                    <a href="/formulario">
-                        <span class="glyphicon glyphicon-user"></span> 
-                        {{ session.get('nome_usuario') }}
+                    <a href="/logout">
+                        <span class="glyphicon glyphicon-log-out"></span> 
+                        Sair ({{ session.get('usuario_logado') }})
                     </a>
                 </li>
                 {% endif %}
@@ -91,7 +108,7 @@
             </div>
             <div class="col-md-6 text-right">
                 <p class="text-muted">
-                    Flask {{ flask_version }} | Bootstrap 3 | PythonAnywhere
+                    Flask {{ flask_version }} | PythonAnywhere
                 </p>
             </div>
         </div>
