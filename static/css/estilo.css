@@ -48,4 +48,61 @@ body {
 }
 
 /* Painéis coloridos */
-.panel-primary > .
+.panel-primary > .panel-heading {
+    background-color: #3498db;
+    border-color: #2980b9;
+}
+
+.panel-success > .panel-heading {
+    background-color: #27ae60;
+    border-color: #229954;
+}
+
+.panel-info > .panel-heading {
+    background-color: #2980b9;
+    border-color: #2471a3;
+}
+
+.panel-warning > .panel-heading {
+    background-color: #f39c12;
+    border-color: #d68910;
+}
+
+.panel-danger > .panel-heading {
+    background-color: #e74c3c;
+    border-color: #cb4335;
+}
+
+/* Animações */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page-header {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.panel {
+    animation: fadeIn 0.7s ease-in;
+    transition: box-shadow 0.3s ease;
+}
+
+.panel:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .footer {
+        position: relative;
+    }
+    
+    body {
+        padding-bottom: 0;
+    }
+    
+    .page-header h1 {
+        font-size: 24px;
+    }
+}
