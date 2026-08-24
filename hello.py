@@ -27,8 +27,8 @@ moment = Moment(app)
 # ============ DADOS DO ALUNO ============
 
 ALUNO = {
-    'nome': 'Leticia Brondi',
-    'prontuario': 'SEU_PRONTUARIO',
+    'nome': 'Leticia Brondi Carvalheiro',
+    'prontuario': 'PT3037801',
     'instituicao': 'IFSP',
     'curso': 'Análise e Desenvolvimento de Sistemas',
     'semestre': '4º Semestre',
@@ -121,7 +121,7 @@ def home():
                          paginas=paginas,
                          current_time=datetime.utcnow(),
                          titulo='Home',
-                         descricao='Página central com todas as atividades')
+                         descricao='Página central com todas as avaliações contínuas')
 
 # ============ ROTA DATA E HORA (ANTIGA HOME) ============
 
@@ -129,7 +129,6 @@ def home():
 def data_hora():
     """
     Rota Data e Hora - Mostra informações temporais
-    (Antiga página Home)
     """
     return render_template('data_hora.html',
                          current_time=datetime.utcnow(),
