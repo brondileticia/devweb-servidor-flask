@@ -1,6 +1,6 @@
 """
-Aplicação Flask - Avaliação Contínua: Aula 050.B
-Disciplina: PTBDSWS - Programação em Desenvolvimento Web Servidor
+Aplicação Flask - Avaliação Contínua
+Disciplina: PTBDSWS - Desenvolvimento Web Servidor
 Aluno: Leticia Brondi
 Instituição: IFSP - Campus Pirituba
 """
