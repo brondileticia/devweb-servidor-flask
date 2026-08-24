@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}PTBDSWS - Home{% endblock %}
+
+{% block page_content %}
+<div class="page-header text-center">
+    <h1>Avaliação contínua: Aula 050.B</h1>
+    <p class="lead">Central de Atividades - Todas as páginas em um só lugar</p>
+</div>
+
+{# Informações rápidas #}
+<div class="row">
+    <div class="col-md-4">
+        <div class="panel panel-info">
+            <div class="panel-body text-center">
+                <h3 style="margin: 0;">
+                    <span class="glyphicon glyphicon-time"></span>
+                </h3>
+                <p class="text-muted" style="margin: 5px 0;">
+                    {{ moment(current_time).format('LLL') }}
+                </p>
+                <small>That was {{ moment(current_time).fromNow(refresh=True) }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-success">
+            <div class="panel-body text-center">
+                <h3 style="margin: 0;">
+                    <span class="glyphicon glyphicon-folder-open"></span>
+                </h3>
+                <p class="text-muted" style="margin: 5px 0;">
+                    {{ paginas|length }} páginas disponíveis
+                </p>
+                <small>Todas as atividades organizadas</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-warning">
+            <div class="panel-body text-center">
+                <h3 style="margin: 0;">
+                    <span class="glyphicon glyphicon-user"></span>
+                </h3>
+                <p class="text-muted" style="margin: 5px 0;">
+                    {% if session.get('usuario_logado') %}
+                        Logado como {{ session.get('usuario_logado') }}
+                    {% else %}
+                        Visitante
+                    {% endif %}
+                </p>
+                <small>Sessão ativa</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Cards das páginas #}
+<div class="row">
+    {% for pagina in paginas %}
+    <div class="col-md-4 col-sm-6">
+        <div class="panel {{ pagina.cor }} card-hover">
+            <div class="panel-heading text-center">
+                <span class="glyphicon {{ pagina.icone }}" style="font-size: 48px;"></span>
+                <h3 class="panel-title" style="margin-top: 10px;">{{ pagina.titulo }}</h3>
+            </div>
+            <div class="panel-body">
+                <p class="text-center">{{ pagina.descricao }}</p>
+                <hr>
+                <div class="text-center">
+                    <span class="label label-default">{{ pagina.aula }}</span>
+                </div>
+            </div>
+            <div class="panel-footer text-center">
+                <a href="{{ pagina.url }}" class="btn btn-primary btn-block">
+                    <span class="glyphicon glyphicon-arrow-right"></span> 
+                    Acessar
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{# Rodapé informativo #}
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-info text-center">
+            <strong>Dica:</strong> Clique em qualquer card para acessar a página correspondente.
+            Novas atividades serão adicionadas aqui automaticamente.
+        </div>
+    </div>
+</div>
+{% endblock %}
