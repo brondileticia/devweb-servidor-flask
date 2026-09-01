@@ -5,7 +5,7 @@
 {% block page_content %}
 <div class="page-header">
     <h1>Banco de Dados</h1>
-    <p class="lead">Usando Flask-SQLAlchemy para guardar nomes</p>
+    <p class="lead">Usando SQLite para guardar nomes</p>
 </div>
 
 <div class="row">
@@ -18,7 +18,7 @@
             </h2>
             <p class="text-muted">Pleased to meet you!</p>
             <p class="small">
-                Usuário ID: {{ usuario.id }} | 
+                ID: {{ usuario.id }} | 
                 Criado em: {{ moment(usuario.criado_em).format('LLL') }}
             </p>
         </div>
@@ -35,14 +35,13 @@
         <div class="panel panel-primary">
             <div class="panel-heading">
                 <h3 class="panel-title">
-                    <span class="glyphicon glyphicon-hdd"></span> 
+                    <span class="glyphicon glyphicon-user"></span> 
                     What is your name?
                 </h3>
             </div>
             <div class="panel-body">
                 <form method="POST" action="/banco-dados">
                     <div class="form-group">
-                        <label for="nome">Nome:</label>
                         <input type="text" 
                                class="form-control input-lg" 
                                id="nome" 
@@ -54,14 +53,13 @@
                     </div>
                     
                     <button type="submit" class="btn btn-primary btn-lg btn-block">
-                        <span class="glyphicon glyphicon-save"></span> 
                         Submit
                     </button>
                 </form>
             </div>
         </div>
         
-        {# Lista de todos os usuários #}
+        {# Lista de usuários #}
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -71,7 +69,7 @@
             </div>
             <div class="panel-body">
                 <p class="text-muted">
-                    Total de usuários: <strong>{{ usuarios|length }}</strong>
+                    Total: <strong>{{ usuarios|length }}</strong> usuário(s)
                 </p>
                 <div class="list-group">
                     {% for u in usuarios %}
@@ -81,8 +79,8 @@
                         </h4>
                         <p class="list-group-item-text text-muted small">
                             ID: {{ u.id }} | 
-                            Criado em: {{ moment(u.criado_em).format('LLL') }} |
-                            Atualizado em: {{ moment(u.atualizado_em).format('LLL') }}
+                            Criado: {{ moment(u.criado_em).format('LLL') }} |
+                            Atualizado: {{ moment(u.atualizado_em).format('LLL') }}
                         </p>
                     </div>
                     {% else %}
