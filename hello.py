@@ -1,6 +1,8 @@
 """
-Aplicação Flask - Avaliação Contínua: Semana 07
-Disciplina: PTBDSWS
+Aplicação Flask - Avaliação Contínua: Semana 08
+Disciplina: PTBDSWS - Programação em Desenvolvimento Web Servidor
+Aluno: Leticia Brondi
+Instituição: IFSP - Campus Pirituba
 """
 
 from datetime import datetime
@@ -12,69 +14,95 @@ from flask_sqlalchemy import SQLAlchemy
 import flask
 import os
 
-# ============ CONFIGURAÇÃO ============
+# ============ CONFIGURAÇÃO DA APLICAÇÃO ============
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-secreta-desenvolvimento')
 
-# Configuração SQLite (CORRIGIDA)
+# Configuração SQLite
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'app.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Inicialização
+# Inicialização das extensões
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
 
-# ============ MODELO ============
+# ============ MODELO USUARIO (COM FUNÇÃO) ============
+
 class Usuario(db.Model):
-    """Classe Usuario - Tabela usuarios no banco"""
+    """
+    Classe Usuario - Representa a tabela 'usuarios' no banco de dados
+    Agora com campo 'funcao' (role)
+    """
     __tablename__ = 'usuarios'
     
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
+    funcao = db.Column(db.String(50), nullable=False, default='User')
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
     atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    def __init__(self, nome):
+    def __init__(self, nome, funcao='User'):
         self.nome = nome
+        self.funcao = funcao
     
     def __repr__(self):
-        return f'<Usuario {self.nome}>'
+        return f'<Usuario {self.nome} - {self.funcao}>'
     
     def salvar(self):
+        """Salva o usuário no banco de dados"""
         db.session.add(self)
         db.session.commit()
     
     def atualizar(self, novo_nome):
+        """Atualiza o nome do usuário"""
         self.nome = novo_nome
         self.atualizado_em = datetime.utcnow()
         db.session.commit()
     
     def deletar(self):
+        """Remove o usuário do banco de dados"""
         db.session.delete(self)
         db.session.commit()
+    
+    def promover(self):
+        """Promove usuário para Administrator"""
+        self.funcao = 'Administrator'
+        db.session.commit()
+    
+    def rebaixar(self):
+        """Rebaixa usuário para User"""
+        self.funcao = 'User'
+        db.session.commit()
 
-# ============ DADOS ============
+# ============ DADOS DO ALUNO ============
+
 ALUNO = {
-    'nome': 'Leticia Brondi',
+    'nome': 'Leticia Brondi Carvalheiro',
     'prontuario': 'SEU_PRONTUARIO',
-    'instituicao': 'IFSP'
+    'instituicao': 'IFSP',
+    'curso': 'Análise e Desenvolvimento de Sistemas',
+    'semestre': '4º Semestre',
+    'campus': 'Pirituba'
 }
 
 DISCIPLINAS = ['DSWA5', 'DWBA4', 'Gestão de Projetos']
 
 # ============ CONTEXT PROCESSOR ============
+
 @app.context_processor
 def inject_globals():
     return {
         'flask_version': flask.__version__,
         'aluno': ALUNO,
         'ano_atual': datetime.now().year,
-        'app_name': 'Avaliação contínua: Semana 07'
+        'app_name': 'Avaliação contínua: Semana 08'
     }
 
-# ============ ERROS ============
+# ============ TRATAMENTO DE ERROS ============
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html', titulo='Página não encontrada'), 404
@@ -84,8 +112,10 @@ def internal_server_error(e):
     return render_template('500.html', titulo='Erro do servidor'), 500
 
 # ============ ROTA HOME ============
+
 @app.route('/')
 def home():
+    """Home com cards"""
     paginas = [
         {
             'titulo': 'Data e Hora',
@@ -129,11 +159,11 @@ def home():
         },
         {
             'titulo': 'Banco de Dados',
-            'descricao': 'Usuários com SQLite',
+            'descricao': 'Usuários com funções e listagem',
             'url': '/banco-dados',
             'icone': 'glyphicon-hdd',
             'cor': 'panel-primary',
-            'aula': 'Semana 07'
+            'aula': 'Semana 08'
         },
         {
             'titulo': 'Formulário Simples',
@@ -150,40 +180,89 @@ def home():
                          current_time=datetime.utcnow(),
                          titulo='Home')
 
-# ============ ROTA BANCO DE DADOS ============
+# ============ ROTA BANCO DE DADOS (ATUALIZADA - SEMANA 08) ============
+
 @app.route('/banco-dados', methods=['GET', 'POST'])
 def banco_dados():
+    """
+    Rota Banco de Dados - Usuários com funções
+    """
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
+        funcao = request.form.get('funcao', 'User').strip()
         
         if not nome:
             flash('Por favor, informe um nome!', 'danger')
             return redirect(url_for('banco_dados'))
         
-        # Verifica se existe usuário
-        usuario_existente = Usuario.query.first()
+        # Verifica se o usuário já existe
+        usuario_existente = Usuario.query.filter_by(nome=nome).first()
         
         if usuario_existente:
-            usuario_existente.atualizar(nome)
-            flash(f'Nome atualizado para "{nome}"!', 'success')
+            # Atualiza a função do usuário existente
+            usuario_existente.funcao = funcao
+            usuario_existente.atualizado_em = datetime.utcnow()
+            db.session.commit()
+            flash(f'Usuário "{nome}" já existe! Função atualizada para {funcao}!', 'warning')
         else:
-            novo_usuario = Usuario(nome)
+            # Cria novo usuário
+            novo_usuario = Usuario(nome, funcao)
             novo_usuario.salvar()
-            flash(f'Usuário "{nome}" criado!', 'success')
+            flash(f'Usuário "{nome}" criado com função {funcao}!', 'success')
         
         return redirect(url_for('banco_dados'))
     
-    # GET
-    usuario = Usuario.query.order_by(Usuario.id.desc()).first()
+    # GET: Busca todos os usuários
     usuarios = Usuario.query.order_by(Usuario.id.desc()).all()
+    ultimo_usuario = Usuario.query.order_by(Usuario.id.desc()).first()
+    
+    # Contagem
+    total_usuarios = Usuario.query.count()
+    total_admins = Usuario.query.filter_by(funcao='Administrator').count()
+    total_users = Usuario.query.filter_by(funcao='User').count()
     
     return render_template('banco_dados.html',
-                         usuario=usuario,
                          usuarios=usuarios,
+                         ultimo_usuario=ultimo_usuario,
+                         total_usuarios=total_usuarios,
+                         total_admins=total_admins,
+                         total_users=total_users,
                          current_time=datetime.utcnow(),
                          titulo='Banco de Dados')
 
-# ============ OUTRAS ROTAS (SIMPLIFICADAS) ============
+# ============ ROTA PARA DELETAR USUÁRIO ============
+
+@app.route('/deletar-usuario/<int:usuario_id>')
+def deletar_usuario(usuario_id):
+    """Deleta um usuário específico"""
+    usuario = Usuario.query.get_or_404(usuario_id)
+    nome = usuario.nome
+    usuario.deletar()
+    flash(f'Usuário "{nome}" deletado com sucesso!', 'danger')
+    return redirect(url_for('banco_dados'))
+
+# ============ ROTA PARA PROMOVER USUÁRIO ============
+
+@app.route('/promover-usuario/<int:usuario_id>')
+def promover_usuario(usuario_id):
+    """Promove usuário para Administrator"""
+    usuario = Usuario.query.get_or_404(usuario_id)
+    usuario.promover()
+    flash(f'Usuário "{usuario.nome}" promovido para Administrator!', 'success')
+    return redirect(url_for('banco_dados'))
+
+# ============ ROTA PARA REBAIXAR USUÁRIO ============
+
+@app.route('/rebaixar-usuario/<int:usuario_id>')
+def rebaixar_usuario(usuario_id):
+    """Rebaixa usuário para User"""
+    usuario = Usuario.query.get_or_404(usuario_id)
+    usuario.rebaixar()
+    flash(f'Usuário "{usuario.nome}" rebaixado para User!', 'warning')
+    return redirect(url_for('banco_dados'))
+
+# ============ DEMAIS ROTAS (MANTIDAS) ============
+
 @app.route('/data-hora')
 def data_hora():
     return render_template('data_hora.html',
@@ -192,6 +271,7 @@ def data_hora():
 
 @app.route('/formulario-identificacao', methods=['GET', 'POST'])
 def formulario_identificacao():
+    # Código existente...
     return render_template('formulario_identificacao.html',
                          current_time=datetime.utcnow(),
                          titulo='Formulário de Identificação')
@@ -229,20 +309,33 @@ def user(name):
                          name=name,
                          titulo=f'Usuário {name}')
 
-# ============ CRIAÇÃO DO BANCO (AGORA COM VERIFICAÇÃO) ============
+# ============ CRIAÇÃO DO BANCO ============
+
 with app.app_context():
     try:
         db.create_all()
         print("✅ Banco de dados criado com sucesso!")
         
-        # Verificar se o arquivo existe
-        if os.path.exists(os.path.join(BASE_DIR, 'app.db')):
-            print("✅ Arquivo app.db criado em:", os.path.join(BASE_DIR, 'app.db'))
-        else:
-            print("⚠️ Arquivo app.db não encontrado")
+        # Verificar se já existem usuários
+        total = Usuario.query.count()
+        print(f"📊 Total de usuários: {total}")
+        
+        if total == 0:
+            # Criar usuários iniciais de exemplo
+            usuarios_iniciais = [
+                Usuario("Letícia Brondi", "Administrator"),
+                Usuario("Fábio", "User"),
+                Usuario("Taissa", "User")
+            ]
+            
+            for u in usuarios_iniciais:
+                u.salvar()
+            
+            print("✅ Usuários iniciais criados!")
     except Exception as e:
-        print(f"❌ Erro ao criar banco: {e}")
+        print(f"❌ Erro: {e}")
 
 # ============ EXECUÇÃO ============
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
