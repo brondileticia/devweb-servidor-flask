@@ -5,27 +5,26 @@
 {% block page_content %}
 <div class="page-header">
     <h1>Banco de Dados</h1>
-    <p class="lead">Usando SQLite para guardar nomes</p>
+    <p class="lead">Usuários com funções e persistência</p>
 </div>
 
 <div class="row">
-    <div class="col-md-8 col-md-offset-2">
-        {# Exibição do nome #}
-        {% if usuario %}
+    <div class="col-md-8">
+        {# Exibição do último usuário #}
+        {% if ultimo_usuario %}
         <div class="alert alert-success text-center">
             <h2 style="margin: 0;">
-                Hello, {{ usuario.nome }}!
+                Olá, {{ ultimo_usuario.nome }}!
             </h2>
-            <p class="text-muted">Pleased to meet you!</p>
+            <p class="text-muted">Prazer em conhecê-lo!</p>
             <p class="small">
-                ID: {{ usuario.id }} | 
-                Criado em: {{ moment(usuario.criado_em).format('LLL') }}
+                Função: <span class="label label-info">{{ ultimo_usuario.funcao }}</span>
             </p>
         </div>
         {% else %}
         <div class="alert alert-info text-center">
             <h2 style="margin: 0;">
-                Hello, Stranger!
+                Olá, Stranger!
             </h2>
             <p class="text-muted">Nenhum usuário cadastrado ainda.</p>
         </div>
@@ -42,60 +41,137 @@
             <div class="panel-body">
                 <form method="POST" action="/banco-dados">
                     <div class="form-group">
+                        <label for="nome">Nome:</label>
                         <input type="text" 
                                class="form-control input-lg" 
                                id="nome" 
                                name="nome" 
                                placeholder="Digite seu nome"
-                               value="{{ usuario.nome if usuario else '' }}"
                                required
                                autofocus>
                     </div>
                     
+                    <div class="form-group">
+                        <label for="funcao">Função:</label>
+                        <select class="form-control" id="funcao" name="funcao">
+                            <option value="User">User</option>
+                            <option value="Administrator">Administrator</option>
+                        </select>
+                    </div>
+                    
                     <button type="submit" class="btn btn-primary btn-lg btn-block">
+                        <span class="glyphicon glyphicon-save"></span> 
                         Submit
                     </button>
                 </form>
             </div>
         </div>
-        
-        {# Lista de usuários #}
-        <div class="panel panel-default">
+    </div>
+    
+    <div class="col-md-4">
+        {# Estatísticas #}
+        <div class="panel panel-info">
             <div class="panel-heading">
                 <h3 class="panel-title">
-                    <span class="glyphicon glyphicon-list"></span> 
-                    Usuários no Banco de Dados
+                    <span class="glyphicon glyphicon-stats"></span> 
+                    Estatísticas
                 </h3>
             </div>
             <div class="panel-body">
-                <p class="text-muted">
-                    Total: <strong>{{ usuarios|length }}</strong> usuário(s)
-                </p>
-                <div class="list-group">
-                    {% for u in usuarios %}
-                    <div class="list-group-item">
-                        <h4 class="list-group-item-heading">
-                            {{ u.nome }}
-                        </h4>
-                        <p class="list-group-item-text text-muted small">
-                            ID: {{ u.id }} | 
-                            Criado: {{ moment(u.criado_em).format('LLL') }} |
-                            Atualizado: {{ moment(u.atualizado_em).format('LLL') }}
-                        </p>
+                <div class="row text-center">
+                    <div class="col-xs-4">
+                        <h2>{{ total_usuarios }}</h2>
+                        <small>Total</small>
                     </div>
-                    {% else %}
-                    <p class="text-center text-muted">Nenhum usuário cadastrado.</p>
-                    {% endfor %}
+                    <div class="col-xs-4">
+                        <h2 class="text-danger">{{ total_admins }}</h2>
+                        <small>Admins</small>
+                    </div>
+                    <div class="col-xs-4">
+                        <h2 class="text-success">{{ total_users }}</h2>
+                        <small>Users</small>
+                    </div>
                 </div>
             </div>
         </div>
         
         {# Botão voltar #}
-        <div class="text-center" style="margin-top: 20px;">
-            <a href="/" class="btn btn-default">
-                <span class="glyphicon glyphicon-arrow-left"></span> 
-                Voltar para Home
-            </a>
+        <a href="/" class="btn btn-default btn-block">
+            <span class="glyphicon glyphicon-arrow-left"></span> 
+            Voltar para Home
+        </a>
+    </div>
+</div>
+
+{# Tabela de usuários #}
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-list"></span> 
+                    Relação de usuários cadastrados
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Nome do usuário</th>
+                                <th>Função</th>
+                                <th>Criado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios %}
+                            <tr>
+                                <td>{{ u.nome }}</td>
+                                <td>
+                                    {% if u.funcao == 'Administrator' %}
+                                        <span class="label label-danger">{{ u.funcao }}</span>
+                                    {% else %}
+                                        <span class="label label-info">{{ u.funcao }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">{{ moment(u.criado_em).format('LLL') }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-xs">
+                                        {% if u.funcao == 'User' %}
+                                        <a href="/promover-usuario/{{ u.id }}" 
+                                           class="btn btn-warning"
+                                           title="Promover para Administrator">
+                                            <span class="glyphicon glyphicon-arrow-up"></span>
+                                        </a>
+                                        {% else %}
+                                        <a href="/rebaixar-usuario/{{ u.id }}" 
+                                           class="btn btn-info"
+                                           title="Rebaixar para User">
+                                            <span class="glyphicon glyphicon-arrow-down"></span>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <a href="/deletar-usuario/{{ u.id }}" 
+                                           class="btn btn-danger"
+                                           title="Deletar usuário"
+                                           onclick="return confirm('Tem certeza que deseja deletar {{ u.nome }}?')">
+                                            <span class="glyphicon glyphicon-trash"></span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">
+                                    Nenhum usuário cadastrado.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
