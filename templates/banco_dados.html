@@ -95,6 +95,25 @@
             </div>
         </div>
         
+        {# Botão de Reset (MÉTODO 5) #}
+        <div class="panel panel-danger">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-warning-sign"></span> 
+                    Zona de Perigo
+                </h3>
+            </div>
+            <div class="panel-body text-center">
+                <p class="text-muted">Resetar o banco de dados para o estado inicial</p>
+                <a href="/resetar-banco" 
+                   class="btn btn-danger btn-block"
+                   onclick="return confirm('Tem certeza que deseja RESETAR o banco de dados? TODOS os dados serão perdidos!')">
+                    <span class="glyphicon glyphicon-refresh"></span> 
+                    Resetar Banco de Dados
+                </a>
+            </div>
+        </div>
+        
         {# Botão voltar #}
         <a href="/" class="btn btn-default btn-block">
             <span class="glyphicon glyphicon-arrow-left"></span> 
