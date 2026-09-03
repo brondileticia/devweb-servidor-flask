@@ -10,7 +10,6 @@
 
 <div class="row">
     <div class="col-md-8">
-        {# Exibição do último usuário #}
         {% if ultimo_usuario %}
         <div class="alert alert-success text-center">
             <h2 style="margin: 0;">
@@ -30,7 +29,6 @@
         </div>
         {% endif %}
         
-        {# Formulário #}
         <div class="panel panel-primary">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -69,7 +67,6 @@
     </div>
     
     <div class="col-md-4">
-        {# Estatísticas #}
         <div class="panel panel-info">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -95,7 +92,6 @@
             </div>
         </div>
         
-        {# Botão de Reset (MÉTODO 5) #}
         <div class="panel panel-danger">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -104,17 +100,16 @@
                 </h3>
             </div>
             <div class="panel-body text-center">
-                <p class="text-muted">Resetar o banco de dados para o estado inicial</p>
+                <p class="text-muted">Resetar o banco de dados</p>
                 <a href="/resetar-banco" 
                    class="btn btn-danger btn-block"
-                   onclick="return confirm('Tem certeza que deseja RESETAR o banco de dados? TODOS os dados serão perdidos!')">
+                   onclick="return confirm('Tem certeza?')">
                     <span class="glyphicon glyphicon-refresh"></span> 
-                    Resetar Banco de Dados
+                    Resetar Banco
                 </a>
             </div>
         </div>
         
-        {# Botão voltar #}
         <a href="/" class="btn btn-default btn-block">
             <span class="glyphicon glyphicon-arrow-left"></span> 
             Voltar para Home
@@ -122,7 +117,6 @@
     </div>
 </div>
 
-{# Tabela de usuários #}
 <div class="row">
     <div class="col-md-12">
         <div class="panel panel-default">
@@ -160,21 +154,21 @@
                                         {% if u.funcao == 'User' %}
                                         <a href="/promover-usuario/{{ u.id }}" 
                                            class="btn btn-warning"
-                                           title="Promover para Administrator">
+                                           title="Promover">
                                             <span class="glyphicon glyphicon-arrow-up"></span>
                                         </a>
                                         {% else %}
                                         <a href="/rebaixar-usuario/{{ u.id }}" 
                                            class="btn btn-info"
-                                           title="Rebaixar para User">
+                                           title="Rebaixar">
                                             <span class="glyphicon glyphicon-arrow-down"></span>
                                         </a>
                                         {% endif %}
                                         
                                         <a href="/deletar-usuario/{{ u.id }}" 
                                            class="btn btn-danger"
-                                           title="Deletar usuário"
-                                           onclick="return confirm('Tem certeza que deseja deletar {{ u.nome }}?')">
+                                           title="Deletar"
+                                           onclick="return confirm('Tem certeza?')">
                                             <span class="glyphicon glyphicon-trash"></span>
                                         </a>
                                     </div>
