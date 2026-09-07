@@ -8,7 +8,6 @@ Funcionalidades:
 - Banco de dados SQLite com SQLAlchemy
 - Modelo Usuario com funções (User/Administrator)
 - CRUD completo de usuários
-- Reset do banco via interface
 - Listagem com estatísticas
 - Promover/Rebaixar usuários
 - Deletar usuários
@@ -41,18 +40,11 @@ bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
 
-# ============ MODELOS (CLASSES DE BANCO DE DADOS) ============
+# ============ MODELO USUARIO ============
 
 class Usuario(db.Model):
     """
     Classe Usuario - Representa a tabela 'usuarios' no banco de dados
-    
-    Atributos:
-    - id: Identificador único
-    - nome: Nome do usuário
-    - funcao: Função do usuário (User ou Administrator)
-    - criado_em: Data de criação
-    - atualizado_em: Data da última atualização
     """
     __tablename__ = 'usuarios'
     
@@ -108,11 +100,15 @@ class Usuario(db.Model):
     
     def promover(self):
         """Promove usuário para Administrator"""
-        return self.atualizar(nova_funcao='Administrator')
+        self.funcao = 'Administrator'
+        db.session.commit()
+        return True
     
     def rebaixar(self):
         """Rebaixa usuário para User"""
-        return self.atualizar(nova_funcao='User')
+        self.funcao = 'User'
+        db.session.commit()
+        return True
     
     def to_dict(self):
         """Converte o objeto para dicionário (para API)"""
@@ -135,18 +131,13 @@ ALUNO = {
     'campus': 'Pirituba'
 }
 
-# Lista de disciplinas disponíveis
 DISCIPLINAS = ['DSWA5', 'DWBA4', 'Gestão de Projetos']
-
-# Funções disponíveis
 FUNCOES = ['User', 'Administrator']
 
 # ============ FUNÇÕES AUXILIARES ============
 
 def criar_usuarios_iniciais():
-    """
-    Cria usuários iniciais no banco de dados
-    """
+    """Cria usuários iniciais no banco de dados"""
     usuarios_iniciais = [
         Usuario("john", "Administrator"),
         Usuario("susan", "User"),
@@ -155,34 +146,13 @@ def criar_usuarios_iniciais():
     ]
     
     for usuario in usuarios_iniciais:
-        usuario.salvar()
+        db.session.add(usuario)
     
+    db.session.commit()
     return len(usuarios_iniciais)
 
-def resetar_banco_dados():
-    """
-    Reseta o banco de dados completamente
-    Remove todas as tabelas e recria com dados iniciais
-    """
-    try:
-        # Remove todas as tabelas
-        db.drop_all()
-        
-        # Recria as tabelas
-        db.create_all()
-        
-        # Cria usuários iniciais
-        total = criar_usuarios_iniciais()
-        
-        return True, f"Banco resetado com sucesso! {total} usuários iniciais criados."
-    except Exception as e:
-        db.session.rollback()
-        return False, f"Erro ao resetar banco: {e}"
-
 def get_estatisticas():
-    """
-    Retorna estatísticas do banco de dados
-    """
+    """Retorna estatísticas do banco de dados"""
     total_usuarios = Usuario.query.count()
     total_admins = Usuario.query.filter_by(funcao='Administrator').count()
     total_users = Usuario.query.filter_by(funcao='User').count()
@@ -215,12 +185,6 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('500.html', titulo='Erro do servidor'), 500
-
-@app.errorhandler(403)
-def forbidden(e):
-    return render_template('404.html', 
-                         titulo='Acesso negado',
-                         mensagem='Você não tem permissão para acessar esta página.'), 403
 
 # ============ ROTA HOME ============
 
@@ -289,16 +253,14 @@ def home():
     return render_template('home.html',
                          paginas=paginas,
                          current_time=datetime.utcnow(),
-                         titulo='Home',
-                         descricao='Página central com todas as atividades')
+                         titulo='Home')
 
 # ============ ROTA BANCO DE DADOS ============
 
 @app.route('/banco-dados', methods=['GET', 'POST'])
 def banco_dados():
-    """
-    Rota Banco de Dados - CRUD de usuários
-    """
+    """Rota Banco de Dados - CRUD de usuários"""
+    
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         funcao = request.form.get('funcao', 'User').strip()
@@ -308,71 +270,50 @@ def banco_dados():
             flash('Por favor, informe um nome!', 'danger')
             return redirect(url_for('banco_dados'))
         
-        if len(nome) > 100:
-            flash('Nome muito longo! Máximo de 100 caracteres.', 'danger')
-            return redirect(url_for('banco_dados'))
-        
         if funcao not in FUNCOES:
             funcao = 'User'
         
-        # Verifica se o usuário já existe (case insensitive)
-        usuario_existente = Usuario.query.filter(
-            db.func.lower(Usuario.nome) == db.func.lower(nome)
-        ).first()
+        # Verifica se o usuário já existe
+        usuario_existente = Usuario.query.filter_by(nome=nome).first()
         
         if usuario_existente:
-            # Atualiza a função do usuário existente
-            usuario_existente.atualizar(nova_funcao=funcao)
-            flash(f'Usuário "{nome}" já existe! Função atualizada para {funcao}!', 'warning')
+            # Atualiza a função
+            usuario_existente.funcao = funcao
+            db.session.commit()
+            flash(f'Usuário "{nome}" já existe! Função atualizada!', 'warning')
         else:
             # Cria novo usuário
-            novo_usuario = Usuario(nome, funcao)
-            if novo_usuario.salvar():
-                flash(f'Usuário "{nome}" criado com função {funcao}!', 'success')
-            else:
-                flash(f'Erro ao criar usuário "{nome}"!', 'danger')
+            novo_usuario = Usuario(nome=nome, funcao=funcao)
+            db.session.add(novo_usuario)
+            db.session.commit()
+            flash(f'Usuário "{nome}" criado com sucesso!', 'success')
         
         return redirect(url_for('banco_dados'))
     
     # GET: Busca dados
     usuarios = Usuario.query.order_by(Usuario.id.desc()).all()
-    ultimo_usuario = Usuario.query.order_by(Usuario.id.desc()).first()
     stats = get_estatisticas()
     
     return render_template('banco_dados.html',
                          usuarios=usuarios,
-                         ultimo_usuario=ultimo_usuario,
                          **stats,
                          current_time=datetime.utcnow(),
-                         titulo='Banco de Dados',
-                         descricao='Usuários com funções e persistência')
-
-# ============ ROTA PARA RESETAR O BANCO ============
-
-@app.route('/resetar-banco')
-def resetar_banco():
-    """Rota para resetar o banco de dados"""
-    sucesso, mensagem = resetar_banco_dados()
-    
-    if sucesso:
-        flash(mensagem, 'success')
-    else:
-        flash(mensagem, 'danger')
-    
-    return redirect(url_for('banco_dados'))
+                         titulo='Banco de Dados')
 
 # ============ ROTA PARA DELETAR USUÁRIO ============
 
 @app.route('/deletar-usuario/<int:usuario_id>')
 def deletar_usuario(usuario_id):
     """Deleta um usuário específico"""
-    usuario = Usuario.query.get_or_404(usuario_id)
-    nome = usuario.nome
+    usuario = Usuario.query.get(usuario_id)
     
-    if usuario.deletar():
-        flash(f'Usuário "{nome}" deletado com sucesso!', 'danger')
+    if usuario:
+        nome = usuario.nome
+        db.session.delete(usuario)
+        db.session.commit()
+        flash(f'Usuário "{nome}" deletado!', 'danger')
     else:
-        flash(f'Erro ao deletar usuário "{nome}"!', 'danger')
+        flash('Usuário não encontrado!', 'danger')
     
     return redirect(url_for('banco_dados'))
 
@@ -381,12 +322,12 @@ def deletar_usuario(usuario_id):
 @app.route('/promover-usuario/<int:usuario_id>')
 def promover_usuario(usuario_id):
     """Promove usuário para Administrator"""
-    usuario = Usuario.query.get_or_404(usuario_id)
+    usuario = Usuario.query.get(usuario_id)
     
-    if usuario.promover():
-        flash(f'Usuário "{usuario.nome}" promovido para Administrator!', 'success')
-    else:
-        flash(f'Erro ao promover usuário "{usuario.nome}"!', 'danger')
+    if usuario:
+        usuario.funcao = 'Administrator'
+        db.session.commit()
+        flash(f'Usuário "{usuario.nome}" promovido!', 'success')
     
     return redirect(url_for('banco_dados'))
 
@@ -395,12 +336,32 @@ def promover_usuario(usuario_id):
 @app.route('/rebaixar-usuario/<int:usuario_id>')
 def rebaixar_usuario(usuario_id):
     """Rebaixa usuário para User"""
-    usuario = Usuario.query.get_or_404(usuario_id)
+    usuario = Usuario.query.get(usuario_id)
     
-    if usuario.rebaixar():
-        flash(f'Usuário "{usuario.nome}" rebaixado para User!', 'warning')
-    else:
-        flash(f'Erro ao rebaixar usuário "{usuario.nome}"!', 'danger')
+    if usuario:
+        usuario.funcao = 'User'
+        db.session.commit()
+        flash(f'Usuário "{usuario.nome}" rebaixado!', 'warning')
+    
+    return redirect(url_for('banco_dados'))
+
+# ============ ROTA PARA RESETAR ============
+
+@app.route('/resetar-banco')
+def resetar_banco():
+    """Reseta o banco de dados"""
+    try:
+        # Deleta todos os usuários
+        Usuario.query.delete()
+        db.session.commit()
+        
+        # Cria usuários iniciais
+        criar_usuarios_iniciais()
+        
+        flash('Banco resetado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao resetar: {e}', 'danger')
     
     return redirect(url_for('banco_dados'))
 
@@ -412,33 +373,20 @@ def api_usuarios():
     usuarios = Usuario.query.all()
     return jsonify([u.to_dict() for u in usuarios])
 
-@app.route('/api/usuarios/<int:usuario_id>')
-def api_usuario(usuario_id):
-    """API - Retorna um usuário específico em JSON"""
-    usuario = Usuario.query.get_or_404(usuario_id)
-    return jsonify(usuario.to_dict())
-
-# ============ ROTA DATA E HORA ============
+# ============ DEMAIS ROTAS (MANTIDAS) ============
 
 @app.route('/data-hora')
 def data_hora():
-    """Rota Data e Hora"""
     return render_template('data_hora.html',
                          current_time=datetime.utcnow(),
                          titulo='Data e Hora')
 
-# ============ ROTA FORMULÁRIO DE IDENTIFICAÇÃO ============
-
 @app.route('/formulario-identificacao', methods=['GET', 'POST'])
 def formulario_identificacao():
-    """Rota Formulário de Identificação"""
     nome = session.get('nome', '')
     sobrenome = session.get('sobrenome', '')
     instituicao = session.get('instituicao', None)
     disciplina = session.get('disciplina', '')
-    
-    remote_ip = request.remote_addr or None
-    host = request.host or None
     
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
@@ -467,78 +415,51 @@ def formulario_identificacao():
                          instituicao=instituicao,
                          disciplina=disciplina,
                          disciplinas=DISCIPLINAS,
-                         remote_ip=remote_ip,
-                         host=host,
                          current_time=datetime.utcnow(),
                          titulo='Formulário de Identificação')
 
-# ============ ROTA LOGIN ============
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Rota Login"""
     if request.method == 'POST':
         usuario = request.form.get('usuario', '').strip()
         senha = request.form.get('senha', '').strip()
         
-        if not usuario or not senha:
-            flash('Usuário e senha são obrigatórios!', 'danger')
-            return redirect(url_for('login'))
-        
-        # Simulação de autenticação (substituir por banco de dados real)
         if usuario == 'admin' and senha == '123456':
             session['usuario_logado'] = usuario
-            flash(f'Login realizado com sucesso! Bem-vindo(a), {usuario}!', 'success')
+            flash(f'Login realizado! Bem-vindo(a), {usuario}!', 'success')
             return redirect(url_for('home'))
         else:
             flash('Usuário ou senha inválidos!', 'danger')
-            return redirect(url_for('login'))
     
     return render_template('login.html',
                          current_time=datetime.utcnow(),
                          titulo='Login')
 
-# ============ ROTA LOGOUT ============
-
 @app.route('/logout')
 def logout():
-    """Rota Logout"""
     session.clear()
-    flash('Logout realizado com sucesso!', 'info')
+    flash('Logout realizado!', 'info')
     return redirect(url_for('home'))
-
-# ============ ROTA IDENTIFICAÇÃO ============
 
 @app.route('/identificacao')
 def identificacao():
-    """Rota Identificação do Aluno"""
     return render_template('identificacao.html',
                          titulo='Identificação do Aluno')
 
-# ============ ROTA CONTEXTO DA REQUISIÇÃO ============
-
 @app.route('/contextorequisicao')
 def contextorequisicao():
-    """Rota Contexto da Requisição"""
     user_agent = request.headers.get('User-Agent', 'Desconhecido')
     remote_ip = request.remote_addr or 'Desconhecido'
     host = request.host or 'Desconhecido'
-    method = request.method
-    path = request.path
     
     return render_template('contextorequisicao.html',
                          user_agent=user_agent,
                          remote_ip=remote_ip,
                          host=host,
-                         method=method,
-                         path=path,
                          titulo='Contexto da Requisição')
-
-# ============ ROTA FORMULÁRIO SIMPLES ============
 
 @app.route('/formulario', methods=['GET', 'POST'])
 def formulario():
-    """Rota Formulário Simples"""
     nome_atual = session.get('nome_usuario', None)
     
     if request.method == 'POST':
@@ -549,18 +470,10 @@ def formulario():
                 flash(f'O nome foi alterado de "{nome_atual}" para "{novo_nome}"!', 'warning')
             else:
                 flash(f'Bem-vindo(a), {novo_nome}!', 'success')
-            
             session['nome_usuario'] = novo_nome
         else:
-            if nome_atual:
-                flash(f'Nome "{nome_atual}" removido!', 'info')
             session.pop('nome_usuario', None)
         
-        return redirect(url_for('formulario'))
-    
-    if request.args.get('limpar') == 'true':
-        session.pop('nome_usuario', None)
-        flash('Nome limpo com sucesso!', 'info')
         return redirect(url_for('formulario'))
     
     nome_atual = session.get('nome_usuario', None)
@@ -569,38 +482,30 @@ def formulario():
                          nome=nome_atual,
                          titulo='Formulário Simples')
 
-# ============ ROTA DINÂMICA DE USUÁRIO ============
-
 @app.route('/user/<name>')
 def user(name):
-    """Rota dinâmica de usuário"""
     name = name.replace('<', '').replace('>', '').strip()
-    
-    if not name:
-        flash('Nome inválido!', 'danger')
-        return redirect(url_for('home'))
-    
     return render_template('user.html',
                          name=name,
                          titulo=f'Usuário {name}')
 
-# ============ CRIAÇÃO DO BANCO ============
+# ============ CRIAÇÃO DO BANCO (CORRIGIDA) ============
 
 with app.app_context():
+    # Cria as tabelas
+    db.create_all()
+    print("✅ Tabelas criadas/verificadas!")
+    
+    # Verifica se há usuários
     try:
-        db.create_all()
-        print("✅ Banco de dados criado/verificado com sucesso!")
-        
-        # Verifica se já existem usuários
         total = Usuario.query.count()
         print(f"📊 Total de usuários: {total}")
         
         if total == 0:
-            # Cria usuários iniciais
             criar_usuarios_iniciais()
             print("✅ Usuários iniciais criados!")
     except Exception as e:
-        print(f"❌ Erro ao inicializar banco: {e}")
+        print(f"⚠️ Erro ao verificar usuários: {e}")
 
 # ============ EXECUÇÃO ============
 
