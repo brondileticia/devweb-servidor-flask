@@ -5,35 +5,12 @@
 {% block page_content %}
 <div class="page-header">
     <h1>Banco de Dados</h1>
-    <p class="lead">Usuários com funções e persistência</p>
+    <p class="lead">Usuários agrupados por função</p>
 </div>
 
 <div class="row">
+    {# ============ COLUNA ESQUERDA ============ #}
     <div class="col-md-8">
-        {# Mensagem de boas-vindas baseada no último usuário #}
-        {% if usuarios %}
-        <div class="alert alert-success text-center">
-            <h2 style="margin: 0;">
-                Olá, {{ usuarios[0].nome }}!
-            </h2>
-            <p class="text-muted">Prazer em conhecê-lo!</p>
-            <p class="small">
-                Função: 
-                {% if usuarios[0].funcao == 'Administrator' %}
-                    <span class="label label-danger">{{ usuarios[0].funcao }}</span>
-                {% else %}
-                    <span class="label label-info">{{ usuarios[0].funcao }}</span>
-                {% endif %}
-            </p>
-        </div>
-        {% else %}
-        <div class="alert alert-info text-center">
-            <h2 style="margin: 0;">
-                Olá, Stranger!
-            </h2>
-            <p class="text-muted">Nenhum usuário cadastrado ainda.</p>
-        </div>
-        {% endif %}
         
         {# Formulário #}
         <div class="panel panel-primary">
@@ -45,23 +22,29 @@
             </div>
             <div class="panel-body">
                 <form method="POST" action="/banco-dados">
-                    <div class="form-group">
-                        <label for="nome">Nome:</label>
-                        <input type="text" 
-                               class="form-control input-lg" 
-                               id="nome" 
-                               name="nome" 
-                               placeholder="Digite seu nome"
-                               required
-                               autofocus>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="funcao">Função:</label>
-                        <select class="form-control" id="funcao" name="funcao">
-                            <option value="User">User</option>
-                            <option value="Administrator">Administrator</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label for="nome">Nome:</label>
+                                <input type="text" 
+                                       class="form-control input-lg" 
+                                       id="nome" 
+                                       name="nome" 
+                                       placeholder="Digite seu nome"
+                                       required
+                                       autofocus>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="funcao">Função:</label>
+                                <select class="form-control input-lg" id="funcao" name="funcao">
+                                    <option value="User">👤 User</option>
+                                    <option value="Moderator">🛡️ Moderator</option>
+                                    <option value="Administrator">👑 Administrator</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary btn-lg btn-block">
@@ -72,108 +55,181 @@
             </div>
         </div>
         
-        {# Tabela de usuários #}
+        {# ============ LISTAGEM AGRUPADA POR FUNÇÃO ============ #}
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h3 class="panel-title">
                     <span class="glyphicon glyphicon-list"></span> 
-                    Relação de usuários cadastrados
+                    Usuários agrupados por função
                 </h3>
             </div>
             <div class="panel-body">
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover table-bordered">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome do usuário</th>
-                                <th>Função</th>
-                                <th>Criado em</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for u in usuarios %}
-                            <tr>
-                                <td>{{ u.id }}</td>
-                                <td>{{ u.nome }}</td>
-                                <td>
-                                    {% if u.funcao == 'Administrator' %}
-                                        <span class="label label-danger">{{ u.funcao }}</span>
-                                    {% else %}
-                                        <span class="label label-info">{{ u.funcao }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="small">
-                                    {% if u.criado_em %}
-                                        {{ moment(u.criado_em).format('DD/MM/YYYY HH:mm') }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-xs">
-                                        {% if u.funcao == 'User' %}
-                                        <a href="/promover-usuario/{{ u.id }}" 
-                                           class="btn btn-warning"
-                                           title="Promover para Administrator">
-                                            <span class="glyphicon glyphicon-arrow-up"></span>
-                                        </a>
-                                        {% else %}
-                                        <a href="/rebaixar-usuario/{{ u.id }}" 
-                                           class="btn btn-info"
-                                           title="Rebaixar para User">
-                                            <span class="glyphicon glyphicon-arrow-down"></span>
-                                        </a>
-                                        {% endif %}
-                                        
-                                        <a href="/deletar-usuario/{{ u.id }}" 
-                                           class="btn btn-danger"
-                                           title="Deletar usuário"
-                                           onclick="return confirm('Tem certeza que deseja deletar {{ u.nome }}?')">
-                                            <span class="glyphicon glyphicon-trash"></span>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">
-                                    Nenhum usuário cadastrado.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                {% if usuarios_por_funcao %}
+                    {% for funcao, usuarios_grupo in usuarios_por_funcao.items() %}
+                    <div class="panel panel-{{ icones_funcoes[funcao].cor }}" style="margin-bottom: 15px;">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <span class="glyphicon {{ icones_funcoes[funcao].icone }}"></span>
+                                {{ funcao }}
+                                <span class="badge pull-right">{{ usuarios_grupo|length }} usuário(s)</span>
+                            </h4>
+                        </div>
+                        <div class="panel-body" style="padding: 0;">
+                            <table class="table table-striped table-hover" style="margin-bottom: 0;">
+                                <thead>
+                                    <tr>
+                                        <th width="50">ID</th>
+                                        <th>Nome</th>
+                                        <th width="150">Criado em</th>
+                                        <th width="120">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for u in usuarios_grupo %}
+                                    <tr>
+                                        <td>{{ u.id }}</td>
+                                        <td><strong>{{ u.nome }}</strong></td>
+                                        <td class="small">
+                                            {% if u.criado_em %}
+                                                {{ moment(u.criado_em).format('DD/MM/YY HH:mm') }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-xs">
+                                                {% if u.funcao != 'Administrator' %}
+                                                <a href="/promover-usuario/{{ u.id }}" 
+                                                   class="btn btn-success"
+                                                   title="Promover para {{ 'Moderator' if u.funcao == 'User' else 'Administrator' }}">
+                                                    <span class="glyphicon glyphicon-arrow-up"></span>
+                                                </a>
+                                                {% endif %}
+                                                
+                                                {% if u.funcao != 'User' %}
+                                                <a href="/rebaixar-usuario/{{ u.id }}" 
+                                                   class="btn btn-warning"
+                                                   title="Rebaixar para {{ 'User' if u.funcao == 'Moderator' else 'Moderator' }}">
+                                                    <span class="glyphicon glyphicon-arrow-down"></span>
+                                                </a>
+                                                {% endif %}
+                                                
+                                                <a href="/deletar-usuario/{{ u.id }}" 
+                                                   class="btn btn-danger"
+                                                   title="Deletar"
+                                                   onclick="return confirm('Deletar {{ u.nome }}?')">
+                                                    <span class="glyphicon glyphicon-trash"></span>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info text-center">
+                        <span class="glyphicon glyphicon-info-sign"></span>
+                        Nenhum usuário cadastrado ainda.
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
     
+    {# ============ COLUNA DIREITA ============ #}
     <div class="col-md-4">
-        {# Estatísticas #}
-        <div class="panel panel-info">
+        
+        {# ⭐ CONTADORES ============ #}
+        <div class="panel panel-primary">
             <div class="panel-heading">
                 <h3 class="panel-title">
                     <span class="glyphicon glyphicon-stats"></span> 
-                    Estatísticas
+                    Contadores
                 </h3>
             </div>
             <div class="panel-body">
                 <div class="row text-center">
-                    <div class="col-xs-4">
-                        <h2>{{ total_usuarios }}</h2>
-                        <small>Total</small>
+                    <div class="col-xs-6">
+                        <div class="well well-sm" style="margin-bottom: 10px;">
+                            <h1 style="margin: 0; color: #337ab7;">{{ total_usuarios }}</h1>
+                            <small>👥 Usuários</small>
+                        </div>
                     </div>
-                    <div class="col-xs-4">
-                        <h2 class="text-danger">{{ total_admins }}</h2>
-                        <small>Admins</small>
-                    </div>
-                    <div class="col-xs-4">
-                        <h2 class="text-success">{{ total_users }}</h2>
-                        <small>Users</small>
+                    <div class="col-xs-6">
+                        <div class="well well-sm" style="margin-bottom: 10px;">
+                            <h1 style="margin: 0; color: #f39c12;">{{ total_funcoes }}</h1>
+                            <small>🎭 Funções</small>
+                        </div>
                     </div>
                 </div>
+                <p class="text-center text-muted small">
+                    {{ funcoes_em_uso }} de {{ total_funcoes }} funções em uso
+                </p>
+            </div>
+        </div>
+        
+        {# ⭐ ESTATÍSTICAS POR FUNÇÃO ============ #}
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-list-alt"></span> 
+                    Distribuição por função
+                </h3>
+            </div>
+            <div class="panel-body" style="padding: 0;">
+                <table class="table table-condensed" style="margin-bottom: 0;">
+                    <tbody>
+                        {% for funcao in funcoes %}
+                        <tr>
+                            <td>
+                                <span class="glyphicon {{ icones_funcoes[funcao].icone }}"></span>
+                                {{ funcao }}
+                            </td>
+                            <td class="text-right">
+                                <span class="label {{ icones_funcoes[funcao].label }}">
+                                    {{ contagem_por_funcao[funcao] }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr style="background-color: #f5f5f5; font-weight: bold;">
+                            <td>TOTAL</td>
+                            <td class="text-right">
+                                <span class="label label-default">{{ total_usuarios }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        {# Legenda de funções #}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-info-sign"></span> 
+                    Hierarquia de funções
+                </h3>
+            </div>
+            <div class="panel-body">
+                <p>
+                    <span class="label label-danger">👑 Administrator</span>
+                    <br><small class="text-muted">Acesso total</small>
+                </p>
+                <p>
+                    <span class="label label-warning">🛡️ Moderator</span>
+                    <br><small class="text-muted">Acesso intermediário</small>
+                </p>
+                <p>
+                    <span class="label label-info">👤 User</span>
+                    <br><small class="text-muted">Acesso básico</small>
+                </p>
+                <hr>
+                <p class="small text-muted">
+                    <strong>Ciclo:</strong><br>
+                    User ↔ Moderator ↔ Administrator
+                </p>
             </div>
         </div>
         
@@ -186,17 +242,15 @@
                 </h3>
             </div>
             <div class="panel-body text-center">
-                <p class="text-muted">Resetar o banco de dados para o estado inicial</p>
                 <a href="/resetar-banco" 
                    class="btn btn-danger btn-block"
-                   onclick="return confirm('Tem certeza que deseja resetar o banco? Todos os dados serão perdidos!')">
+                   onclick="return confirm('Resetar banco? Todos os dados serão perdidos!')">
                     <span class="glyphicon glyphicon-refresh"></span> 
                     Resetar Banco
                 </a>
             </div>
         </div>
         
-        {# Botão voltar #}
         <a href="/" class="btn btn-default btn-block">
             <span class="glyphicon glyphicon-arrow-left"></span> 
             Voltar para Home
