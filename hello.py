@@ -119,7 +119,7 @@ ALUNO = {
 
 DISCIPLINAS = ['DSWA5', 'DWBA4', 'Gestão de Projetos']
 
-# ⭐ NOVA LISTA COM MODERATOR
+# ⭐ 3 FUNÇÕES
 FUNCOES = ['User', 'Moderator', 'Administrator']
 
 # Hierarquia (para ordenação e exibição)
@@ -162,7 +162,7 @@ def get_estatisticas():
     
     # ⭐ CONTADOR DE FUNÇÕES (quantas funções têm pelo menos 1 usuário)
     funcoes_em_uso = sum(1 for qtd in contagem_por_funcao.values() if qtd > 0)
-    total_funcoes = len(FUNCOES)  # Total de funções disponíveis
+    total_funcoes = len(FUNCOES)
     
     return {
         'total_usuarios': total_usuarios,
@@ -250,7 +250,7 @@ def banco_dados():
         if funcao not in FUNCOES:
             funcao = 'User'
         
-        # Verifica duplicata
+        # Verifica duplicata (case insensitive)
         existente = Usuario.query.filter(
             db.func.lower(Usuario.nome) == db.func.lower(nome)
         ).first()
@@ -270,12 +270,12 @@ def banco_dados():
     
     # GET - Buscar dados
     usuarios = Usuario.query.order_by(Usuario.id.desc()).all()
-    usuarios_por_funcao = get_usuarios_por_funcao()  # ⭐ NOVO
+    usuarios_por_funcao = get_usuarios_por_funcao()
     stats = get_estatisticas()
     
     return render_template('banco_dados.html',
                          usuarios=usuarios,
-                         usuarios_por_funcao=usuarios_por_funcao,  # ⭐ NOVO
+                         usuarios_por_funcao=usuarios_por_funcao,
                          **stats,
                          current_time=datetime.utcnow(),
                          titulo='Banco de Dados')
@@ -290,6 +290,8 @@ def deletar_usuario(usuario_id):
         db.session.delete(usuario)
         db.session.commit()
         flash(f'Usuário "{nome}" deletado!', 'danger')
+    else:
+        flash('Usuário não encontrado!', 'danger')
     return redirect(url_for('banco_dados'))
 
 @app.route('/promover-usuario/<int:usuario_id>')
@@ -299,6 +301,8 @@ def promover_usuario(usuario_id):
         antiga = usuario.funcao
         usuario.promover()
         flash(f'"{usuario.nome}": {antiga} → {usuario.funcao}', 'success')
+    else:
+        flash('Usuário não encontrado!', 'danger')
     return redirect(url_for('banco_dados'))
 
 @app.route('/rebaixar-usuario/<int:usuario_id>')
@@ -308,18 +312,8 @@ def rebaixar_usuario(usuario_id):
         antiga = usuario.funcao
         usuario.rebaixar()
         flash(f'"{usuario.nome}": {antiga} → {usuario.funcao}', 'warning')
-    return redirect(url_for('banco_dados'))
-
-@app.route('/resetar-banco')
-def resetar_banco():
-    try:
-        Usuario.query.delete()
-        db.session.commit()
-        criar_usuarios_iniciais()
-        flash('Banco resetado com sucesso!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro: {e}', 'danger')
+    else:
+        flash('Usuário não encontrado!', 'danger')
     return redirect(url_for('banco_dados'))
 
 # ============ API ============
