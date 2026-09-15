@@ -41,7 +41,7 @@ db = SQLAlchemy(app)
 
 # ============ CONFIGURAÇÃO DO MAILGUN ============
 
-MAILGUN_API_KEY = os.environ.get('API_KEY', '')
+MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY', '')
 MAILGUN_DOMAIN = 'sandbox2ee0c97988c848cd84add8f3d62a0ac0.mailgun.org'
 MAILGUN_FROM = f"Mailgun Sandbox <postmaster@{MAILGUN_DOMAIN}>"
 MAILGUN_URL = f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages"
