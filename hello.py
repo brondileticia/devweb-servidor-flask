@@ -1,5 +1,5 @@
 """
-Aplicação Flask - Avaliação Contínua: Semana 09
+Aplicação Flask - Avaliação Contínua: Semana 10
 Disciplina: PTBDSWS - Programação em Desenvolvimento Web Servidor
 Aluno: Leticia Brondi Carvalheiro
 Instituição: IFSP - Campus Pirituba
@@ -12,6 +12,7 @@ Funcionalidades:
 - Contador de usuários e de funções
 - Estatísticas por função
 - Promover/Rebaixar com ciclo de 3 níveis
+- Envio de e-mail ao cadastrar novo usuário (Resend)
 """
 
 from datetime import datetime
@@ -22,6 +23,7 @@ from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import flask
 import os
+import resend
 
 # ============ CONFIGURAÇÃO ============
 
@@ -36,6 +38,41 @@ app.config['JSON_SORT_KEYS'] = False
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
+
+# ============ CONFIGURAÇÃO DO RESEND ============
+
+resend.api_key = os.environ.get('RESEND_API_KEY', '')
+
+# ============ DADOS DO ALUNO ============
+
+ALUNO = {
+    'nome': 'Leticia Brondi Carvalheiro',
+    'prontuario': 'SEU_PRONTUARIO',
+    'instituicao': 'IFSP',
+    'email_institucional': 'l.brondi@aluno.ifsp.edu.br'
+}
+
+# Destinatários fixos dos e-mails
+DESTINATARIOS_EMAIL = [
+    'flaskaulasweb@zohomail.com',
+    'l.brondi@aluno.ifsp.edu.br'
+]
+
+DISCIPLINAS = ['DSWA5', 'DWBA4', 'Gestão de Projetos']
+
+FUNCOES = ['User', 'Moderator', 'Administrator']
+
+HIERARQUIA_FUNCOES = {
+    'Administrator': 1,
+    'Moderator': 2,
+    'User': 3
+}
+
+ICONES_FUNCOES = {
+    'Administrator': {'icone': 'glyphicon-king', 'cor': 'danger', 'label': 'label-danger'},
+    'Moderator': {'icone': 'glyphicon-eye-open', 'cor': 'warning', 'label': 'label-warning'},
+    'User': {'icone': 'glyphicon-user', 'cor': 'info', 'label': 'label-info'}
+}
 
 # ============ MODELO ============
 
@@ -88,14 +125,12 @@ class Usuario(db.Model):
             return False
     
     def promover(self):
-        """Promove: User → Moderator → Administrator"""
         ciclo = {'User': 'Moderator', 'Moderator': 'Administrator', 'Administrator': 'Administrator'}
         self.funcao = ciclo.get(self.funcao, 'User')
         db.session.commit()
         return True
     
     def rebaixar(self):
-        """Rebaixa: Administrator → Moderator → User"""
         ciclo = {'Administrator': 'Moderator', 'Moderator': 'User', 'User': 'User'}
         self.funcao = ciclo.get(self.funcao, 'User')
         db.session.commit()
@@ -109,37 +144,92 @@ class Usuario(db.Model):
             'criado_em': self.criado_em.isoformat() if self.criado_em else None
         }
 
-# ============ DADOS ============
+# ============ FUNÇÃO DE ENVIO DE E-MAIL ============
 
-ALUNO = {
-    'nome': 'Leticia Brondi Carvalheiro',
-    'prontuario': 'SEU_PRONTUARIO',
-    'instituicao': 'IFSP'
-}
-
-DISCIPLINAS = ['DSWA5', 'DWBA4', 'Gestão de Projetos']
-
-# ⭐ 3 FUNÇÕES
-FUNCOES = ['User', 'Moderator', 'Administrator']
-
-# Hierarquia (para ordenação e exibição)
-HIERARQUIA_FUNCOES = {
-    'Administrator': 1,
-    'Moderator': 2,
-    'User': 3
-}
-
-# Ícones e cores para cada função
-ICONES_FUNCOES = {
-    'Administrator': {'icone': 'glyphicon-king', 'cor': 'danger', 'label': 'label-danger'},
-    'Moderator': {'icone': 'glyphicon-eye-open', 'cor': 'warning', 'label': 'label-warning'},
-    'User': {'icone': 'glyphicon-user', 'cor': 'info', 'label': 'label-info'}
-}
+def enviar_email_novo_usuario(nome_usuario, funcao):
+    """
+    Envia e-mail quando um novo usuário é cadastrado.
+    
+    Args:
+        nome_usuario (str): Nome do usuário recém-cadastrado
+        funcao (str): Função do usuário (User, Moderator, Administrator)
+    
+    Returns:
+        bool: True se enviado com sucesso, False caso contrário
+    """
+    if not resend.api_key:
+        print("⚠️ RESEND_API_KEY não configurada. E-mail não enviado.")
+        return False
+    
+    try:
+        # Monta o corpo do e-mail em HTML
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background-color: #337ab7; color: white; padding: 20px; border-radius: 5px 5px 0 0; }}
+                .content {{ background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }}
+                .info {{ background-color: white; padding: 15px; border-left: 4px solid #337ab7; margin: 10px 0; }}
+                .label {{ font-weight: bold; color: #337ab7; }}
+                .footer {{ background-color: #2c3e50; color: #bdc3c7; padding: 15px; text-align: center; font-size: 12px; border-radius: 0 0 5px 5px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2 style="margin: 0;">📧 Novo Usuário Cadastrado</h2>
+                </div>
+                
+                <div class="content">
+                    <p>Um novo usuário foi cadastrado no sistema!</p>
+                    
+                    <div class="info">
+                        <p><span class="label">Prontuário do aluno:</span> {ALUNO['prontuario']}</p>
+                        <p><span class="label">Nome do aluno:</span> {ALUNO['nome']}</p>
+                        <p><span class="label">Usuário cadastrado:</span> <strong>{nome_usuario}</strong></p>
+                        <p><span class="label">Função atribuída:</span> {funcao}</p>
+                        <p><span class="label">Data e hora:</span> {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}</p>
+                    </div>
+                    
+                    <p style="margin-top: 20px;">
+                        Este é um e-mail automático da aplicação <strong>PTBDSWS - Semana 10</strong>.
+                    </p>
+                </div>
+                
+                <div class="footer">
+                    <p><strong>PTBDSWS</strong> - Programação em Desenvolvimento Web Servidor</p>
+                    <p>4º Semestre - Análise e Desenvolvimento de Sistemas</p>
+                    <p>IFSP - Campus Pirituba</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Monta os parâmetros do e-mail
+        params = {
+            "from": "Acme <onboarding@resend.dev>",
+            "to": DESTINATARIOS_EMAIL,
+            "subject": f"[PTBDSWS] Novo usuário cadastrado: {nome_usuario}",
+            "html": html_content
+        }
+        
+        # Envia o e-mail
+        email = resend.Emails.send(params)
+        print(f"✅ E-mail enviado com sucesso! ID: {email}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erro ao enviar e-mail: {e}")
+        return False
 
 # ============ FUNÇÕES AUXILIARES ============
 
 def criar_usuarios_iniciais():
-    """Cria usuários iniciais (um de cada função)"""
     usuarios = [
         Usuario("john", "Administrator"),
         Usuario("susan", "User"),
@@ -152,15 +242,12 @@ def criar_usuarios_iniciais():
     return len(usuarios)
 
 def get_estatisticas():
-    """Retorna estatísticas completas"""
     total_usuarios = Usuario.query.count()
     
-    # Contador por função
     contagem_por_funcao = {}
     for funcao in FUNCOES:
         contagem_por_funcao[funcao] = Usuario.query.filter_by(funcao=funcao).count()
     
-    # ⭐ CONTADOR DE FUNÇÕES (quantas funções têm pelo menos 1 usuário)
     funcoes_em_uso = sum(1 for qtd in contagem_por_funcao.values() if qtd > 0)
     total_funcoes = len(FUNCOES)
     
@@ -175,14 +262,10 @@ def get_estatisticas():
     }
 
 def get_usuarios_por_funcao():
-    """
-    ⭐ Retorna usuários agrupados por função
-    Formato: {'Administrator': [...], 'Moderator': [...], 'User': [...]}
-    """
     agrupado = {}
-    for funcao in FUNCOES:  # Mantém a ordem definida
+    for funcao in FUNCOES:
         usuarios = Usuario.query.filter_by(funcao=funcao).order_by(Usuario.nome).all()
-        if usuarios:  # Só inclui se tiver usuários
+        if usuarios:
             agrupado[funcao] = usuarios
     return agrupado
 
@@ -194,7 +277,7 @@ def inject_globals():
         'flask_version': flask.__version__,
         'aluno': ALUNO,
         'ano_atual': datetime.now().year,
-        'app_name': 'Avaliação contínua: Semana 09',
+        'app_name': 'Avaliação contínua: Semana 10',
         'funcoes': FUNCOES,
         'icones_funcoes': ICONES_FUNCOES,
         'hierarquia_funcoes': HIERARQUIA_FUNCOES
@@ -226,18 +309,18 @@ def home():
         {'titulo': 'Login', 'descricao': 'Sistema de autenticação',
          'url': '/login', 'icone': 'glyphicon-log-in', 'cor': 'panel-danger', 'aula': 'Aula 050.B'},
         {'titulo': 'Banco de Dados', 'descricao': 'Usuários agrupados por função',
-         'url': '/banco-dados', 'icone': 'glyphicon-hdd', 'cor': 'panel-primary', 'aula': 'Semana 09'},
+         'url': '/banco-dados', 'icone': 'glyphicon-hdd', 'cor': 'panel-primary', 'aula': 'Semana 10'},
         {'titulo': 'Formulário Simples', 'descricao': 'Formulário básico',
          'url': '/formulario', 'icone': 'glyphicon-pencil', 'cor': 'panel-default', 'aula': 'Extra'}
     ]
     return render_template('home.html', paginas=paginas,
                          current_time=datetime.utcnow(), titulo='Home')
 
-# ============ BANCO DE DADOS (SEMANA 09) ============
+# ============ BANCO DE DADOS (SEMANA 10) ============
 
 @app.route('/banco-dados', methods=['GET', 'POST'])
 def banco_dados():
-    """Rota Banco de Dados - CRUD + agrupamento"""
+    """Rota Banco de Dados - CRUD + agrupamento + envio de e-mail"""
     
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
@@ -250,21 +333,29 @@ def banco_dados():
         if funcao not in FUNCOES:
             funcao = 'User'
         
-        # Verifica duplicata (case insensitive)
         existente = Usuario.query.filter(
             db.func.lower(Usuario.nome) == db.func.lower(nome)
         ).first()
         
         if existente:
+            # Usuário já existe — apenas atualiza a função (NÃO envia e-mail)
             existente.funcao = funcao
             existente.atualizado_em = datetime.utcnow()
             db.session.commit()
             flash(f'Usuário "{nome}" já existe! Função atualizada para {funcao}!', 'warning')
         else:
+            # Cria novo usuário
             novo = Usuario(nome, funcao)
             db.session.add(novo)
             db.session.commit()
-            flash(f'Usuário "{nome}" criado como {funcao}!', 'success')
+            
+            # ⭐ ENVIA E-MAIL apenas para NOVOS usuários
+            enviado = enviar_email_novo_usuario(nome, funcao)
+            
+            if enviado:
+                flash(f'Usuário "{nome}" criado como {funcao}! E-mail enviado.', 'success')
+            else:
+                flash(f'Usuário "{nome}" criado como {funcao}! (E-mail não enviado)', 'info')
         
         return redirect(url_for('banco_dados'))
     
@@ -279,6 +370,20 @@ def banco_dados():
                          **stats,
                          current_time=datetime.utcnow(),
                          titulo='Banco de Dados')
+
+# ============ ROTA DE TESTE DE E-MAIL ============
+
+@app.route('/testar-email')
+def testar_email():
+    """Rota para testar o envio de e-mail manualmente"""
+    sucesso = enviar_email_novo_usuario("UsuarioTeste", "User")
+    
+    if sucesso:
+        flash('E-mail de teste enviado com sucesso!', 'success')
+    else:
+        flash('Falha ao enviar e-mail de teste. Verifique a configuração.', 'danger')
+    
+    return redirect(url_for('banco_dados'))
 
 # ============ AÇÕES ============
 
@@ -324,7 +429,6 @@ def api_usuarios():
 
 @app.route('/api/usuarios-por-funcao')
 def api_usuarios_por_funcao():
-    """API que retorna usuários agrupados"""
     resultado = {}
     for funcao, usuarios in get_usuarios_por_funcao().items():
         resultado[funcao] = [u.to_dict() for u in usuarios]
@@ -332,7 +436,6 @@ def api_usuarios_por_funcao():
 
 @app.route('/api/estatisticas')
 def api_estatisticas():
-    """API com estatísticas completas"""
     return jsonify(get_estatisticas())
 
 # ============ DEMAIS ROTAS ============
@@ -446,6 +549,8 @@ with app.app_context():
             print("✅ Usuários iniciais criados!")
     except Exception as e:
         print(f"⚠️ Erro: {e}")
+
+# ============ EXECUÇÃO ============
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
