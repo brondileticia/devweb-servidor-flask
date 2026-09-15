@@ -12,7 +12,7 @@ Funcionalidades:
 - Contador de usuários e de funções
 - Estatísticas por função
 - Promover/Rebaixar com ciclo de 3 níveis
-- Envio de e-mail ao cadastrar novo usuário (Resend)
+- Envio de e-mail via Mailgun ao cadastrar novo usuário
 """
 
 from datetime import datetime
@@ -23,9 +23,9 @@ from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import flask
 import os
-import resend
+import requests
 
-# ============ CONFIGURAÇÃO ============
+# ============ CONFIGURAÇÃO DA APLICAÇÃO ============
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'chave-secreta-desenvolvimento')
@@ -39,9 +39,12 @@ bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
 
-# ============ CONFIGURAÇÃO DO RESEND ============
+# ============ CONFIGURAÇÃO DO MAILGUN ============
 
-resend.api_key = os.environ.get('RESEND_API_KEY', '')
+MAILGUN_API_KEY = os.environ.get('API_KEY', '')
+MAILGUN_DOMAIN = 'sandbox2ee0c97988c848cd84add8f3d62a0ac0.mailgun.org'
+MAILGUN_FROM = f"Mailgun Sandbox <postmaster@{MAILGUN_DOMAIN}>"
+MAILGUN_URL = f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages"
 
 # ============ DADOS DO ALUNO ============
 
@@ -52,7 +55,7 @@ ALUNO = {
     'email_institucional': 'l.brondi@aluno.ifsp.edu.br'
 }
 
-# Destinatários fixos dos e-mails
+# Destinatários do e-mail (⚠️ precisam estar autorizados no Mailgun)
 DESTINATARIOS_EMAIL = [
     'flaskaulasweb@zohomail.com',
     'l.brondi@aluno.ifsp.edu.br'
@@ -148,7 +151,7 @@ class Usuario(db.Model):
 
 def enviar_email_novo_usuario(nome_usuario, funcao):
     """
-    Envia e-mail quando um novo usuário é cadastrado.
+    Envia e-mail via Mailgun (Sandbox) quando um novo usuário é cadastrado.
     
     Args:
         nome_usuario (str): Nome do usuário recém-cadastrado
@@ -157,50 +160,41 @@ def enviar_email_novo_usuario(nome_usuario, funcao):
     Returns:
         bool: True se enviado com sucesso, False caso contrário
     """
-    if not resend.api_key:
-        print("⚠️ RESEND_API_KEY não configurada. E-mail não enviado.")
+    if not MAILGUN_API_KEY:
+        print("⚠️ API_KEY do Mailgun não configurada. E-mail não enviado.")
         return False
     
     try:
-        # Monta o corpo do e-mail em HTML
+        # Corpo do e-mail em HTML
         html_content = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background-color: #337ab7; color: white; padding: 20px; border-radius: 5px 5px 0 0; }}
-                .content {{ background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }}
-                .info {{ background-color: white; padding: 15px; border-left: 4px solid #337ab7; margin: 10px 0; }}
-                .label {{ font-weight: bold; color: #337ab7; }}
-                .footer {{ background-color: #2c3e50; color: #bdc3c7; padding: 15px; text-align: center; font-size: 12px; border-radius: 0 0 5px 5px; }}
-            </style>
         </head>
-        <body>
-            <div class="container">
-                <div class="header">
+        <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+            <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 5px;">
+                <div style="background-color: #337ab7; color: white; padding: 20px; border-radius: 5px 5px 0 0;">
                     <h2 style="margin: 0;">📧 Novo Usuário Cadastrado</h2>
                 </div>
                 
-                <div class="content">
+                <div style="padding: 20px; background-color: #f9f9f9;">
                     <p>Um novo usuário foi cadastrado no sistema!</p>
                     
-                    <div class="info">
-                        <p><span class="label">Prontuário do aluno:</span> {ALUNO['prontuario']}</p>
-                        <p><span class="label">Nome do aluno:</span> {ALUNO['nome']}</p>
-                        <p><span class="label">Usuário cadastrado:</span> <strong>{nome_usuario}</strong></p>
-                        <p><span class="label">Função atribuída:</span> {funcao}</p>
-                        <p><span class="label">Data e hora:</span> {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}</p>
+                    <div style="background-color: white; padding: 15px; border-left: 4px solid #337ab7; margin: 15px 0;">
+                        <p><strong>Prontuário do aluno:</strong> {ALUNO['prontuario']}</p>
+                        <p><strong>Nome do aluno:</strong> {ALUNO['nome']}</p>
+                        <p><strong>Usuário cadastrado:</strong> {nome_usuario}</p>
+                        <p><strong>Função:</strong> {funcao}</p>
+                        <p><strong>Data e hora:</strong> {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}</p>
                     </div>
                     
-                    <p style="margin-top: 20px;">
-                        Este é um e-mail automático da aplicação <strong>PTBDSWS - Semana 10</strong>.
+                    <p style="font-size: 12px; color: #777;">
+                        Este é um e-mail automático da aplicação PTBDSWS.
                     </p>
                 </div>
                 
-                <div class="footer">
+                <div style="background-color: #2c3e50; color: #bdc3c7; padding: 15px; text-align: center; font-size: 12px; border-radius: 0 0 5px 5px;">
                     <p><strong>PTBDSWS</strong> - Programação em Desenvolvimento Web Servidor</p>
                     <p>4º Semestre - Análise e Desenvolvimento de Sistemas</p>
                     <p>IFSP - Campus Pirituba</p>
@@ -210,19 +204,26 @@ def enviar_email_novo_usuario(nome_usuario, funcao):
         </html>
         """
         
-        # Monta os parâmetros do e-mail
-        params = {
-            "from": "Acme <onboarding@resend.dev>",
-            "to": DESTINATARIOS_EMAIL,
-            "subject": f"[PTBDSWS] Novo usuário cadastrado: {nome_usuario}",
-            "html": html_content
-        }
+        # Requisição para a API do Mailgun
+        response = requests.post(
+            MAILGUN_URL,
+            auth=("api", MAILGUN_API_KEY),
+            data={
+                "from": MAILGUN_FROM,
+                "to": DESTINATARIOS_EMAIL,
+                "subject": f"[PTBDSWS] Novo usuário cadastrado: {nome_usuario}",
+                "html": html_content
+            },
+            timeout=10
+        )
         
-        # Envia o e-mail
-        email = resend.Emails.send(params)
-        print(f"✅ E-mail enviado com sucesso! ID: {email}")
-        return True
-        
+        if response.status_code == 200:
+            print(f"✅ E-mail enviado via Mailgun! Resposta: {response.json()}")
+            return True
+        else:
+            print(f"❌ Erro Mailgun: {response.status_code} - {response.text}")
+            return False
+            
     except Exception as e:
         print(f"❌ Erro ao enviar e-mail: {e}")
         return False
@@ -338,7 +339,7 @@ def banco_dados():
         ).first()
         
         if existente:
-            # Usuário já existe — apenas atualiza a função (NÃO envia e-mail)
+            # Usuário já existe — atualiza função (NÃO envia e-mail)
             existente.funcao = funcao
             existente.atualizado_em = datetime.utcnow()
             db.session.commit()
