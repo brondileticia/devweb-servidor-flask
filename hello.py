@@ -50,7 +50,7 @@ MAILGUN_URL = f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages"
 
 ALUNO = {
     'nome': 'Leticia Brondi Carvalheiro',
-    'prontuario': 'SEU_PRONTUARIO',
+    'prontuario': 'PT3037801',
     'instituicao': 'IFSP',
     'email_institucional': 'l.brondi@aluno.ifsp.edu.br'
 }
