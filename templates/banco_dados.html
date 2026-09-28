@@ -47,6 +47,27 @@
                         </div>
                     </div>
                     
+                    {# ⭐ SEMANA 11: Checkbox para envio ao professor #}
+                    <div class="well well-sm" style="margin-top: 10px;">
+                        <div class="checkbox" style="margin: 0;">
+                            <label>
+                                <input type="checkbox" name="enviar_professor" id="enviar_professor">
+                                <strong>📧 Enviar também para o professor</strong>
+                                <br>
+                                <small class="text-muted">
+                                    Marcando esta opção, o e-mail será enviado adicionalmente para 
+                                    <code>flaskaulasweb@zohomail.com</code>
+                                </small>
+                            </label>
+                        </div>
+                        <hr style="margin: 10px 0;">
+                        <p class="text-muted small" style="margin: 0;">
+                            <span class="glyphicon glyphicon-info-sign"></span>
+                            O e-mail será <strong>sempre</strong> enviado para o seu endereço institucional 
+                            (<code>l.brondi@aluno.ifsp.edu.br</code>).
+                        </p>
+                    </div>
+                    
                     <button type="submit" class="btn btn-primary btn-lg btn-block">
                         <span class="glyphicon glyphicon-save"></span> 
                         Submit
@@ -201,6 +222,40 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+        
+        {# ⭐ SEMANA 11: Painel de informações sobre o envio de e-mail #}
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-envelope"></span> 
+                    Envio de E-mail
+                </h3>
+            </div>
+            <div class="panel-body">
+                <p>
+                    <span class="glyphicon glyphicon-ok-circle text-success"></span>
+                    <strong>Sempre enviado para:</strong><br>
+                    <code>{{ email_institucional }}</code>
+                </p>
+                <hr>
+                <p>
+                    <span class="glyphicon glyphicon-option-horizontal text-warning"></span>
+                    <strong>Opcional (checkbox):</strong><br>
+                    <code>{{ email_professor }}</code>
+                </p>
+                <hr>
+                <div class="text-center">
+                    <a href="/testar-email" class="btn btn-sm btn-success">
+                        <span class="glyphicon glyphicon-send"></span> 
+                        Testar (só institucional)
+                    </a>
+                    <a href="/testar-email?professor=true" class="btn btn-sm btn-warning">
+                        <span class="glyphicon glyphicon-send"></span> 
+                        Testar (+ professor)
+                    </a>
+                </div>
             </div>
         </div>
         
