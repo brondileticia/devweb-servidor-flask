@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}PTBDSWS - E-mails Enviados{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>E-mails enviados</h1>
+    <p class="lead">
+        Relação de e-mails enviados para o administrador do sistema, 
+        notificando o cadastro de novos usuários.
+    </p>
+</div>
+
+{# Contadores #}
+<div class="row">
+    <div class="col-md-4">
+        <div class="panel panel-primary">
+            <div class="panel-body text-center">
+                <h2 style="margin: 0;">{{ total_emails }}</h2>
+                <small>📧 Total de E-mails</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-success">
+            <div class="panel-body text-center">
+                <h2 style="margin: 0;" class="text-success">{{ total_sucesso }}</h2>
+                <small>✅ Enviados com Sucesso</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="panel panel-danger">
+            <div class="panel-body text-center">
+                <h2 style="margin: 0;" class="text-danger">{{ total_falha }}</h2>
+                <small>❌ Falhas</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Tabela de e-mails #}
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-envelope"></span> 
+                    Histórico de E-mails Enviados
+                    <span class="badge pull-right">{{ total_emails }}</span>
+                </h3>
+            </div>
+            <div class="panel-body">
+                {% if emails %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>De</th>
+                                <th>Para</th>
+                                <th>Assunto</th>
+                                <th>Texto</th>
+                                <th>Data/Hora</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for email in emails %}
+                            <tr>
+                                <td>{{ email.id }}</td>
+                                <td class="small">
+                                    {{ email.remetente }}
+                                </td>
+                                <td class="small">
+                                    <code>{{ email.destinatarios }}</code>
+                                </td>
+                                <td>{{ email.assunto }}</td>
+                                <td class="small">{{ email.texto }}</td>
+                                <td class="small">
+                                    {% if email.enviado_em %}
+                                        {{ moment(email.enviado_em).format('DD/MM/YYYY HH:mm:ss') }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if email.sucesso %}
+                                        <span class="label label-success">
+                                            <span class="glyphicon glyphicon-ok"></span> OK
+                                        </span>
+                                    {% else %}
+                                        <span class="label label-danger">
+                                            <span class="glyphicon glyphicon-remove"></span> Falha
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center">
+                    <span class="glyphicon glyphicon-info-sign"></span>
+                    Nenhum e-mail foi enviado ainda.
+                    <br><br>
+                    <a href="/banco-dados" class="btn btn-primary">
+                        <span class="glyphicon glyphicon-user"></span> 
+                        Cadastrar um novo usuário
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% if emails %}
+            <div class="panel-footer">
+                <a href="/limpar-emails" 
+                   class="btn btn-danger btn-sm"
+                   onclick="return confirm('Tem certeza que deseja limpar TODO o histórico de e-mails?')">
+                    <span class="glyphicon glyphicon-trash"></span> 
+                    Limpar histórico
+                </a>
+                <a href="/" class="btn btn-default btn-sm pull-right">
+                    <span class="glyphicon glyphicon-arrow-left"></span> 
+                    Voltar para Home
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
