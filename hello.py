@@ -1,5 +1,5 @@
 """
-Aplicação Flask - Avaliação Contínua: Semana 11
+Aplicação Flask - Avaliação Contínua: Semana 12
 Disciplina: PTBDSWS - Programação em Desenvolvimento Web Servidor
 Aluno: Leticia Brondi Carvalheiro
 Instituição: IFSP - Campus Pirituba
@@ -7,14 +7,13 @@ Instituição: IFSP - Campus Pirituba
 Funcionalidades:
 - Banco de dados SQLite com SQLAlchemy
 - Modelo Usuario com 3 funções: User, Moderator, Administrator
+- Modelo EmailEnviado para persistir e-mails
 - CRUD completo de usuários
 - Listagem de usuários agrupados por função
 - Contador de usuários e de funções
-- Estatísticas por função
-- Promover/Rebaixar com ciclo de 3 níveis
-- Envio de e-mail via Mailgun:
-  * Sempre envia para o e-mail institucional (l.brondi@aluno.ifsp.edu.br)
-  * Opcionalmente envia para flaskaulasweb@zohomail.com (checkbox)
+- Envio de e-mail via Mailgun (institucional sempre + professor opcional)
+- Persistência dos e-mails enviados
+- Página /emailsEnviados para listar o histórico
 """
 
 from datetime import datetime
@@ -57,10 +56,7 @@ ALUNO = {
     'email_institucional': 'l.brondi@aluno.ifsp.edu.br'
 }
 
-# E-mail obrigatório (sempre recebe)
 EMAIL_INSTITUCIONAL = 'l.brondi@aluno.ifsp.edu.br'
-
-# E-mail opcional (depende do checkbox)
 EMAIL_PROFESSOR = 'flaskaulasweb@zohomail.com'
 
 DISCIPLINAS = ['DSWA5', 'DWBA4', 'Gestão de Projetos']
@@ -79,7 +75,7 @@ ICONES_FUNCOES = {
     'User': {'icone': 'glyphicon-user', 'cor': 'info', 'label': 'label-info'}
 }
 
-# ============ MODELO ============
+# ============ MODELOS ============
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
@@ -149,23 +145,62 @@ class Usuario(db.Model):
             'criado_em': self.criado_em.isoformat() if self.criado_em else None
         }
 
-# ============ FUNÇÃO DE ENVIO DE E-MAIL (SEMANA 11) ============
+
+class EmailEnviado(db.Model):
+    """
+    Classe EmailEnviado - Persiste os e-mails enviados pelo sistema
+    """
+    __tablename__ = 'emails_enviados'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    remetente = db.Column(db.String(200), nullable=False)
+    destinatarios = db.Column(db.Text, nullable=False)  # String com lista
+    assunto = db.Column(db.String(300), nullable=False)
+    texto = db.Column(db.Text, nullable=False)
+    enviado_em = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    sucesso = db.Column(db.Boolean, default=True)
+    
+    def __init__(self, remetente, destinatarios, assunto, texto, sucesso=True):
+        self.remetente = remetente
+        self.destinatarios = destinatarios
+        self.assunto = assunto
+        self.texto = texto
+        self.sucesso = sucesso
+    
+    def __repr__(self):
+        return f'<EmailEnviado {self.assunto} para {self.destinatarios}>'
+    
+    def salvar(self):
+        try:
+            db.session.add(self)
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erro ao salvar e-mail: {e}")
+            return False
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'remetente': self.remetente,
+            'destinatarios': self.destinatarios,
+            'assunto': self.assunto,
+            'texto': self.texto,
+            'enviado_em': self.enviado_em.isoformat() if self.enviado_em else None,
+            'sucesso': self.sucesso
+        }
+
+# ============ FUNÇÃO DE ENVIO DE E-MAIL ============
 
 def enviar_email_novo_usuario(nome_usuario, funcao, enviar_para_professor=False):
     """
     Envia e-mail via Mailgun (Sandbox) quando um novo usuário é cadastrado.
     
-    Semana 11:
-    - SEMPRE envia para o e-mail institucional do aluno
-    - Envia para o e-mail do professor SOMENTE se 'enviar_para_professor' for True
-    
-    Args:
-        nome_usuario (str): Nome do usuário recém-cadastrado
-        funcao (str): Função do usuário (User, Moderator, Administrator)
-        enviar_para_professor (bool): Se True, envia também para flaskaulasweb@zohomail.com
-    
-    Returns:
-        bool: True se enviado com sucesso, False caso contrário
+    Semana 12:
+    - SEMPRE envia para o e-mail institucional
+    - Opcionalmente para flaskaulasweb@zohomail.com
+    - Persiste o e-mail enviado no banco de dados
     """
     if not MAILGUN_API_KEY:
         print("⚠️ API key do Mailgun não configurada. E-mail não enviado.")
@@ -173,15 +208,15 @@ def enviar_email_novo_usuario(nome_usuario, funcao, enviar_para_professor=False)
     
     try:
         # ============ DESTINATÁRIOS ============
-        # O e-mail institucional é SEMPRE destinatário
         destinatarios = [EMAIL_INSTITUCIONAL]
-        
-        # O e-mail do professor é OPCIONAL
         if enviar_para_professor:
             destinatarios.append(EMAIL_PROFESSOR)
         
-        # ============ CORPO DO E-MAIL ============
-        # Aviso visual se foi enviado para o professor
+        # ============ ASSUNTO E TEXTO ============
+        assunto = f"[Flasky] Novo usuário"
+        texto_curto = f"Novo usuário cadastrado: {nome_usuario}"
+        
+        # Aviso visual no HTML se foi para o professor
         aviso_professor = ""
         if enviar_para_professor:
             aviso_professor = """
@@ -237,14 +272,28 @@ def enviar_email_novo_usuario(nome_usuario, funcao, enviar_para_professor=False)
             data={
                 "from": MAILGUN_FROM,
                 "to": destinatarios,
-                "subject": f"[PTBDSWS] Novo usuário cadastrado: {nome_usuario}",
+                "subject": assunto,
                 "html": html_content
             },
             timeout=10
         )
         
-        if response.status_code == 200:
-            print(f"✅ E-mail enviado via Mailgun! Destinatários: {destinatarios}")
+        sucesso = response.status_code == 200
+        
+        # ⭐ SEMANA 12: PERSISTE O E-MAIL NO BANCO (independente do sucesso)
+        destinatarios_str = str(destinatarios)  # Ex: "['a@a.com', 'b@b.com']"
+        
+        email_registro = EmailEnviado(
+            remetente=MAILGUN_FROM,
+            destinatarios=destinatarios_str,
+            assunto=assunto,
+            texto=texto_curto,
+            sucesso=sucesso
+        )
+        email_registro.salvar()
+        
+        if sucesso:
+            print(f"✅ E-mail enviado e salvo! Destinatários: {destinatarios}")
             return True
         else:
             print(f"❌ Erro Mailgun: {response.status_code} - {response.text}")
@@ -304,7 +353,7 @@ def inject_globals():
         'flask_version': flask.__version__,
         'aluno': ALUNO,
         'ano_atual': datetime.now().year,
-        'app_name': 'Avaliação contínua: Semana 11',
+        'app_name': 'Avaliação contínua: Semana 12',
         'funcoes': FUNCOES,
         'icones_funcoes': ICONES_FUNCOES,
         'hierarquia_funcoes': HIERARQUIA_FUNCOES,
@@ -338,24 +387,24 @@ def home():
         {'titulo': 'Login', 'descricao': 'Sistema de autenticação',
          'url': '/login', 'icone': 'glyphicon-log-in', 'cor': 'panel-danger', 'aula': 'Aula 050.B'},
         {'titulo': 'Banco de Dados', 'descricao': 'Usuários agrupados por função',
-         'url': '/banco-dados', 'icone': 'glyphicon-hdd', 'cor': 'panel-primary', 'aula': 'Semana 11'},
+         'url': '/banco-dados', 'icone': 'glyphicon-hdd', 'cor': 'panel-primary', 'aula': 'Semana 12'},
+        {'titulo': 'E-mails Enviados', 'descricao': 'Histórico de e-mails enviados',
+         'url': '/emailsEnviados', 'icone': 'glyphicon-envelope', 'cor': 'panel-success', 'aula': 'Semana 12'},
         {'titulo': 'Formulário Simples', 'descricao': 'Formulário básico',
          'url': '/formulario', 'icone': 'glyphicon-pencil', 'cor': 'panel-default', 'aula': 'Extra'}
     ]
     return render_template('home.html', paginas=paginas,
                          current_time=datetime.utcnow(), titulo='Home')
 
-# ============ BANCO DE DADOS (SEMANA 11) ============
+# ============ BANCO DE DADOS ============
 
 @app.route('/banco-dados', methods=['GET', 'POST'])
 def banco_dados():
-    """Rota Banco de Dados - CRUD + agrupamento + envio de e-mail opcional"""
+    """Rota Banco de Dados - CRUD + agrupamento + envio de e-mail"""
     
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         funcao = request.form.get('funcao', 'User').strip()
-        
-        # ⭐ SEMANA 11: verifica se marcou o checkbox de enviar ao professor
         enviar_professor = request.form.get('enviar_professor') == 'on'
         
         if not nome:
@@ -370,19 +419,15 @@ def banco_dados():
         ).first()
         
         if existente:
-            # Usuário já existe — atualiza função (NÃO envia e-mail)
             existente.funcao = funcao
             existente.atualizado_em = datetime.utcnow()
             db.session.commit()
             flash(f'Usuário "{nome}" já existe! Função atualizada para {funcao}!', 'warning')
         else:
-            # Cria novo usuário
             novo = Usuario(nome, funcao)
             db.session.add(novo)
             db.session.commit()
             
-            # ⭐ SEMANA 11: SEMPRE envia para institucional
-            # Só envia para o professor se o checkbox estiver marcado
             enviado = enviar_email_novo_usuario(nome, funcao, enviar_para_professor=enviar_professor)
             
             if enviado:
@@ -395,7 +440,6 @@ def banco_dados():
         
         return redirect(url_for('banco_dados'))
     
-    # GET - Buscar dados
     usuarios = Usuario.query.order_by(Usuario.id.desc()).all()
     usuarios_por_funcao = get_usuarios_por_funcao()
     stats = get_estatisticas()
@@ -407,23 +451,32 @@ def banco_dados():
                          current_time=datetime.utcnow(),
                          titulo='Banco de Dados')
 
-# ============ ROTA DE TESTE DE E-MAIL ============
+# ============ EMAILS ENVIADOS (SEMANA 12) ============
 
-@app.route('/testar-email')
-def testar_email():
-    """Testa envio de e-mail (institucional obrigatório + professor opcional)"""
-    enviar_professor = request.args.get('professor', 'false').lower() == 'true'
-    sucesso = enviar_email_novo_usuario("UsuarioTeste", "User", enviar_para_professor=enviar_professor)
+@app.route('/emailsEnviados')
+def emails_enviados():
+    """Rota que lista todos os e-mails enviados (página nova da Semana 12)"""
+    emails = EmailEnviado.query.order_by(EmailEnviado.enviado_em.desc()).all()
     
-    if sucesso:
-        if enviar_professor:
-            flash('E-mail de teste enviado para você e para o professor!', 'success')
-        else:
-            flash('E-mail de teste enviado apenas para você!', 'success')
-    else:
-        flash('Falha ao enviar e-mail de teste.', 'danger')
+    total_emails = len(emails)
+    total_sucesso = sum(1 for e in emails if e.sucesso)
+    total_falha = total_emails - total_sucesso
     
-    return redirect(url_for('banco_dados'))
+    return render_template('emails_enviados.html',
+                         emails=emails,
+                         total_emails=total_emails,
+                         total_sucesso=total_sucesso,
+                         total_falha=total_falha,
+                         current_time=datetime.utcnow(),
+                         titulo='E-mails Enviados')
+
+@app.route('/limpar-emails')
+def limpar_emails():
+    """Remove todos os e-mails do banco (opcional)"""
+    EmailEnviado.query.delete()
+    db.session.commit()
+    flash('Histórico de e-mails limpo com sucesso!', 'info')
+    return redirect(url_for('emails_enviados'))
 
 # ============ AÇÕES ============
 
@@ -461,6 +514,23 @@ def rebaixar_usuario(usuario_id):
         flash('Usuário não encontrado!', 'danger')
     return redirect(url_for('banco_dados'))
 
+# ============ ROTA DE TESTE ============
+
+@app.route('/testar-email')
+def testar_email():
+    enviar_professor = request.args.get('professor', 'false').lower() == 'true'
+    sucesso = enviar_email_novo_usuario("UsuarioTeste", "User", enviar_para_professor=enviar_professor)
+    
+    if sucesso:
+        if enviar_professor:
+            flash('E-mail de teste enviado para você e para o professor!', 'success')
+        else:
+            flash('E-mail de teste enviado apenas para você!', 'success')
+    else:
+        flash('Falha ao enviar e-mail de teste.', 'danger')
+    
+    return redirect(url_for('banco_dados'))
+
 # ============ API ============
 
 @app.route('/api/usuarios')
@@ -477,6 +547,10 @@ def api_usuarios_por_funcao():
 @app.route('/api/estatisticas')
 def api_estatisticas():
     return jsonify(get_estatisticas())
+
+@app.route('/api/emails')
+def api_emails():
+    return jsonify([e.to_dict() for e in EmailEnviado.query.all()])
 
 # ============ DEMAIS ROTAS ============
 
@@ -587,6 +661,9 @@ with app.app_context():
         if total == 0:
             criar_usuarios_iniciais()
             print("✅ Usuários iniciais criados!")
+        
+        total_emails = EmailEnviado.query.count()
+        print(f"📧 Total de e-mails registrados: {total_emails}")
     except Exception as e:
         print(f"⚠️ Erro: {e}")
 
