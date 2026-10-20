@@ -19,7 +19,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand" href="{{ url_for('main.home') }}">
                 <span class="glyphicon glyphicon-education"></span> 
                 Avaliações
             </a>
@@ -28,8 +28,25 @@
             <ul class="nav navbar-nav">
                 {# Link para Home sempre visível #}
                 <li {% if titulo == 'Home' %}class="active"{% endif %}>
-                    <a href="/">
+                    <a href="{{ url_for('main.home') }}">
                         <span class="glyphicon glyphicon-home"></span> Home
+                    </a>
+                </li>
+                
+                {# Link para Banco de Dados #}
+                <li {% if titulo == 'Banco de Dados' %}class="active"{% endif %}>
+                    <a href="{{ url_for('users.banco_dados') }}">
+                        <span class="glyphicon glyphicon-hdd"></span> Banco de Dados
+                    </a>
+                </li>
+                
+                {# Link para E-mails Enviados #}
+                <li {% if titulo == 'E-mails Enviados' %}class="active"{% endif %}>
+                    <a href="{{ url_for('emails.emails_enviados') }}">
+                        <span class="glyphicon glyphicon-envelope"></span> E-mails
+                        {% if total_emails_badge and total_emails_badge > 0 %}
+                            <span class="badge" style="background-color: #5cb85c;">{{ total_emails_badge }}</span>
+                        {% endif %}
                     </a>
                 </li>
             </ul>
@@ -45,14 +62,26 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li>
-                            <a href="/formulario-identificacao">
+                            <a href="{{ url_for('main.formulario_identificacao') }}">
                                 <span class="glyphicon glyphicon-edit"></span> 
                                 Meus Dados
                             </a>
                         </li>
+                        <li>
+                            <a href="{{ url_for('users.banco_dados') }}">
+                                <span class="glyphicon glyphicon-hdd"></span> 
+                                Banco de Dados
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('emails.emails_enviados') }}">
+                                <span class="glyphicon glyphicon-envelope"></span> 
+                                E-mails Enviados
+                            </a>
+                        </li>
                         <li class="divider"></li>
                         <li>
-                            <a href="/logout">
+                            <a href="{{ url_for('auth.logout') }}">
                                 <span class="glyphicon glyphicon-log-out"></span> 
                                 Sair
                             </a>
@@ -61,7 +90,7 @@
                 </li>
                 {% else %}
                 <li {% if titulo == 'Login' %}class="active"{% endif %}>
-                    <a href="/login">
+                    <a href="{{ url_for('auth.login') }}">
                         <span class="glyphicon glyphicon-log-in"></span> 
                         Login
                     </a>
