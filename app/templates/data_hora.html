@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}PTBDSWS - Data e Hora{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Data e Hora</h1>
+    <p class="lead">Demonstração de templates, Bootstrap e Moment.js</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-dashboard"></span> 
+                    Dados da última atualização
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="well">
+                            <h4>
+                                <span class="glyphicon glyphicon-calendar"></span> 
+                                Data e Hora Local
+                            </h4>
+                            <p class="lead text-primary">
+                                {{ moment(current_time).format('LLLL') }}
+                            </p>
+                            <small class="text-muted">
+                                Formato: {{ moment(current_time).format('LLL') }}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="well">
+                            <h4>
+                                <span class="glyphicon glyphicon-time"></span> 
+                                Tempo Relativo
+                            </h4>
+                            <p class="lead text-success">
+                                {{ moment(current_time).fromNow(refresh=True) }}
+                            </p>
+                            <small class="text-muted">
+                                Atualização automática a cada minuto
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5>Timestamp Unix:</h5>
+                        <code>{{ moment(current_time).format('X') }}</code>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Dia da semana:</h5>
+                        <code>{{ moment(current_time).format('dddd') }}</code>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Fuso horário:</h5>
+                        <code>UTC (Tempo Universal Coordenado)</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {# Cards informativos #}
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="panel panel-info">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Flask</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>Microframework web em Python</p>
+                        <a href="https://flask.palletsprojects.com/" target="_blank" class="btn btn-info btn-sm">
+                            Documentação
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Bootstrap</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>Framework CSS responsivo</p>
+                        <a href="https://getbootstrap.com/docs/3.3/" target="_blank" class="btn btn-success btn-sm">
+                            Documentação
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="panel panel-warning">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Moment.js</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p>Manipulação de datas em JavaScript</p>
+                        <a href="https://momentjs.com/" target="_blank" class="btn btn-warning btn-sm">
+                            Documentação
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        {# Sidebar informativa #}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-info-sign"></span> 
+                    Sobre esta página
+                </h3>
+            </div>
+            <div class="panel-body">
+                <p>Esta página demonstra:</p>
+                <ul>
+                    <li>Herança de templates</li>
+                    <li>Uso do Bootstrap</li>
+                    <li>Moment.js para datas</li>
+                    <li>Jinja2 templating</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-stats"></span> 
+                    Estatísticas
+                </h3>
+            </div>
+            <div class="panel-body">
+                <p><strong>Hora do servidor:</strong></p>
+                <p class="text-center" style="font-size: 24px;">
+                    {{ moment(current_time).format('HH:mm:ss') }}
+                </p>
+            </div>
+        </div>
+        
+        <div class="alert alert-info" role="alert">
+            <strong>Dica:</strong> A hora é atualizada automaticamente!
+        </div>
+        
+        <a href="/" class="btn btn-default btn-block">
+            <span class="glyphicon glyphicon-arrow-left"></span> 
+            Voltar para Home
+        </a>
+    </div>
+</div>
+{% endblock %}
