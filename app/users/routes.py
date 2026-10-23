@@ -1,8 +1,9 @@
 """
 Rotas de gerenciamento de usuários.
+Semana 13: e-mail adicional + checkbox para o professor.
 """
 from datetime import datetime
-from flask import render_template, request, flash, redirect, url_for
+from flask import render_template, request, flash, redirect, url_for, current_app
 
 from app.users import bp
 from app import db
@@ -12,10 +13,10 @@ from app.services.email_service import enviar_email_novo_usuario
 
 @bp.route('/', methods=['GET', 'POST'])
 def banco_dados():
-    from flask import current_app
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         funcao = request.form.get('funcao', 'User').strip()
+        email_adicional = request.form.get('email_adicional', '').strip()
         enviar_professor = request.form.get('enviar_professor') == 'on'
         
         funcoes_validas = current_app.config['FUNCOES']
@@ -41,29 +42,42 @@ def banco_dados():
             db.session.add(novo)
             db.session.commit()
             
-            enviado = enviar_email_novo_usuario(nome, funcao,
-                                                enviar_para_professor=enviar_professor)
+            # ⭐ SEMANA 13: envia com e-mail adicional + opção do professor
+            resultado = enviar_email_novo_usuario(
+                nome, funcao,
+                email_adicional=email_adicional if email_adicional else None,
+                enviar_para_professor=enviar_professor
+            )
             
-            if enviado:
-                if enviar_professor:
-                    flash(f'Usuário "{nome}" criado! E-mail enviado para você e para o professor.', 'success')
-                else:
-                    flash(f'Usuário "{nome}" criado! E-mail enviado apenas para você.', 'success')
+            if resultado['sucesso']:
+                msg = f'Usuário "{nome}" criado! E-mail enviado para {len(resultado["destinatarios"])} destinatário(s).'
+                
+                detalhes = []
+                if resultado.get('enviado_professor'):
+                    detalhes.append("professor")
+                if resultado.get('email_adicional_valido'):
+                    detalhes.append(email_adicional)
+                if detalhes:
+                    msg += f' Incluindo: {", ".join(detalhes)}.'
+                
+                if email_adicional and not resultado.get('email_adicional_valido'):
+                    msg += ' (e-mail adicional inválido, ignorado)'
+                
+                flash(msg, 'success')
             else:
-                flash(f'Usuário "{nome}" criado! (E-mail não enviado)', 'info')
+                flash(f'Usuário "{nome}" criado! (E-mail não enviado: {resultado.get("erro", "erro desconhecido")})', 'warning')
         
         return redirect(url_for('users.banco_dados'))
     
+    # ============ GET ============
     usuarios = Usuario.query.order_by(Usuario.id.desc()).all()
     
-    # Agrupa por função
     usuarios_por_funcao = {}
     for funcao in current_app.config['FUNCOES']:
         grupo = Usuario.query.filter_by(funcao=funcao).order_by(Usuario.nome).all()
         if grupo:
             usuarios_por_funcao[funcao] = grupo
     
-    # Estatísticas
     contagem_por_funcao = {f: Usuario.query.filter_by(funcao=f).count()
                           for f in current_app.config['FUNCOES']}
     total_usuarios = Usuario.query.count()
@@ -82,6 +96,8 @@ def banco_dados():
                          current_time=datetime.utcnow(),
                          titulo='Banco de Dados')
 
+
+# ============ AÇÕES ============
 
 @bp.route('/deletar-usuario/<int:usuario_id>')
 def deletar_usuario(usuario_id):
@@ -113,4 +129,24 @@ def rebaixar_usuario(usuario_id):
         antiga = usuario.funcao
         usuario.rebaixar()
         flash(f'"{usuario.nome}": {antiga} → {usuario.funcao}', 'warning')
+    return redirect(url_for('users.banco_dados'))
+
+
+@bp.route('/testar-email')
+def testar_email():
+    """Testa envio com opções da query string."""
+    email_extra = request.args.get('email', '').strip()
+    enviar_professor = request.args.get('professor', 'false').lower() == 'true'
+    
+    resultado = enviar_email_novo_usuario(
+        "UsuarioTeste", "User",
+        email_adicional=email_extra if email_extra else None,
+        enviar_para_professor=enviar_professor
+    )
+    
+    if resultado['sucesso']:
+        flash(f'E-mail de teste enviado para {len(resultado["destinatarios"])} destinatário(s)!', 'success')
+    else:
+        flash(f'Falha ao enviar: {resultado.get("erro")}', 'danger')
+    
     return redirect(url_for('users.banco_dados'))
