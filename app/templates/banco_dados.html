@@ -21,7 +21,7 @@
                 </h3>
             </div>
             <div class="panel-body">
-                <form method="POST" action="/banco-dados">
+                <form method="POST" action="{{ url_for('users.banco_dados') }}">
                     <div class="row">
                         <div class="col-md-8">
                             <div class="form-group">
@@ -47,7 +47,23 @@
                         </div>
                     </div>
                     
-                    {# ⭐ SEMANA 11: Checkbox para envio ao professor #}
+                    {# ⭐ SEMANA 13: Campo de e-mail adicional #}
+                    <div class="form-group">
+                        <label for="email_adicional">
+                            <span class="glyphicon glyphicon-envelope"></span> 
+                            E-mail adicional (opcional):
+                        </label>
+                        <input type="email" 
+                               class="form-control input-lg" 
+                               id="email_adicional" 
+                               name="email_adicional" 
+                               placeholder="exemplo@dominio.com">
+                        <small class="text-muted">
+                            Este e-mail também receberá a notificação de cadastro.
+                        </small>
+                    </div>
+                    
+                    {# ⭐ CHECKBOX: enviar ou não para o professor #}
                     <div class="well well-sm" style="margin-top: 10px;">
                         <div class="checkbox" style="margin: 0;">
                             <label>
@@ -56,7 +72,7 @@
                                 <br>
                                 <small class="text-muted">
                                     Marcando esta opção, o e-mail será enviado adicionalmente para 
-                                    <code>flaskaulasweb@zohomail.com</code>
+                                    <code>{{ email_professor }}</code>
                                 </small>
                             </label>
                         </div>
@@ -64,7 +80,7 @@
                         <p class="text-muted small" style="margin: 0;">
                             <span class="glyphicon glyphicon-info-sign"></span>
                             O e-mail será <strong>sempre</strong> enviado para o seu endereço institucional 
-                            (<code>l.brondi@aluno.ifsp.edu.br</code>).
+                            (<code>{{ email_institucional }}</code>).
                         </p>
                     </div>
                     
@@ -76,7 +92,7 @@
             </div>
         </div>
         
-        {# ============ LISTAGEM AGRUPADA POR FUNÇÃO ============ #}
+        {# Listagem agrupada por função #}
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -118,22 +134,22 @@
                                         <td>
                                             <div class="btn-group btn-group-xs">
                                                 {% if u.funcao != 'Administrator' %}
-                                                <a href="/promover-usuario/{{ u.id }}" 
+                                                <a href="{{ url_for('users.promover_usuario', usuario_id=u.id) }}" 
                                                    class="btn btn-success"
-                                                   title="Promover para {{ 'Moderator' if u.funcao == 'User' else 'Administrator' }}">
+                                                   title="Promover">
                                                     <span class="glyphicon glyphicon-arrow-up"></span>
                                                 </a>
                                                 {% endif %}
                                                 
                                                 {% if u.funcao != 'User' %}
-                                                <a href="/rebaixar-usuario/{{ u.id }}" 
+                                                <a href="{{ url_for('users.rebaixar_usuario', usuario_id=u.id) }}" 
                                                    class="btn btn-warning"
-                                                   title="Rebaixar para {{ 'User' if u.funcao == 'Moderator' else 'Moderator' }}">
+                                                   title="Rebaixar">
                                                     <span class="glyphicon glyphicon-arrow-down"></span>
                                                 </a>
                                                 {% endif %}
                                                 
-                                                <a href="/deletar-usuario/{{ u.id }}" 
+                                                <a href="{{ url_for('users.deletar_usuario', usuario_id=u.id) }}" 
                                                    class="btn btn-danger"
                                                    title="Deletar"
                                                    onclick="return confirm('Deletar {{ u.nome }}?')">
@@ -161,7 +177,7 @@
     {# ============ COLUNA DIREITA ============ #}
     <div class="col-md-4">
         
-        {# CONTADORES #}
+        {# Contadores #}
         <div class="panel panel-primary">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -190,7 +206,7 @@
             </div>
         </div>
         
-        {# ESTATÍSTICAS POR FUNÇÃO #}
+        {# Distribuição #}
         <div class="panel panel-info">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -225,7 +241,7 @@
             </div>
         </div>
         
-        {# ⭐ SEMANA 11: Painel de informações sobre o envio de e-mail #}
+        {# Painel de envio de e-mail #}
         <div class="panel panel-success">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -241,25 +257,37 @@
                 </p>
                 <hr>
                 <p>
-                    <span class="glyphicon glyphicon-option-horizontal text-warning"></span>
+                    <span class="glyphicon glyphicon-check text-warning"></span>
                     <strong>Opcional (checkbox):</strong><br>
                     <code>{{ email_professor }}</code>
                 </p>
                 <hr>
+                <p>
+                    <span class="glyphicon glyphicon-plus-sign text-info"></span>
+                    <strong>Opcional (e-mail digitado):</strong><br>
+                    <small class="text-muted">Campo no formulário</small>
+                </p>
+                <hr>
                 <div class="text-center">
-                    <a href="/testar-email" class="btn btn-sm btn-success">
+                    <a href="{{ url_for('users.testar_email') }}" class="btn btn-sm btn-success">
                         <span class="glyphicon glyphicon-send"></span> 
                         Testar (só institucional)
                     </a>
-                    <a href="/testar-email?professor=true" class="btn btn-sm btn-warning">
+                    <a href="{{ url_for('users.testar_email', professor='true') }}" class="btn btn-sm btn-warning">
                         <span class="glyphicon glyphicon-send"></span> 
                         Testar (+ professor)
+                    </a>
+                </div>
+                <div class="text-center" style="margin-top: 8px;">
+                    <a href="{{ url_for('emails.emails_enviados') }}" class="btn btn-sm btn-default">
+                        <span class="glyphicon glyphicon-list"></span> 
+                        Ver histórico
                     </a>
                 </div>
             </div>
         </div>
         
-        {# Legenda de funções #}
+        {# Hierarquia de funções #}
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h3 class="panel-title">
@@ -268,18 +296,12 @@
                 </h3>
             </div>
             <div class="panel-body">
-                <p>
-                    <span class="label label-danger">👑 Administrator</span>
-                    <br><small class="text-muted">Acesso total</small>
-                </p>
-                <p>
-                    <span class="label label-warning">🛡️ Moderator</span>
-                    <br><small class="text-muted">Acesso intermediário</small>
-                </p>
-                <p>
-                    <span class="label label-info">👤 User</span>
-                    <br><small class="text-muted">Acesso básico</small>
-                </p>
+                <p><span class="label label-danger">👑 Administrator</span><br>
+                   <small class="text-muted">Acesso total</small></p>
+                <p><span class="label label-warning">🛡️ Moderator</span><br>
+                   <small class="text-muted">Acesso intermediário</small></p>
+                <p><span class="label label-info">👤 User</span><br>
+                   <small class="text-muted">Acesso básico</small></p>
                 <hr>
                 <p class="small text-muted">
                     <strong>Ciclo:</strong><br>
@@ -288,7 +310,7 @@
             </div>
         </div>
         
-        <a href="/" class="btn btn-default btn-block">
+        <a href="{{ url_for('main.home') }}" class="btn btn-default btn-block">
             <span class="glyphicon glyphicon-arrow-left"></span> 
             Voltar para Home
         </a>
