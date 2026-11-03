@@ -1,15 +1,18 @@
 """
 Rotas de gerenciamento de usuários.
-Semana 13: e-mail adicional + checkbox para o professor.
+Semana 14: CRUD completo + edição via formulário.
 """
 from datetime import datetime
-from flask import render_template, request, flash, redirect, url_for, current_app
+from flask import (render_template, request, flash, redirect, 
+                   url_for, current_app, abort)
 
 from app.users import bp
 from app import db
 from app.models import Usuario
 from app.services.email_service import enviar_email_novo_usuario
 
+
+# ============ LISTAGEM + CADASTRO ============
 
 @bp.route('/', methods=['GET', 'POST'])
 def banco_dados():
@@ -42,7 +45,6 @@ def banco_dados():
             db.session.add(novo)
             db.session.commit()
             
-            # ⭐ SEMANA 13: envia com e-mail adicional + opção do professor
             resultado = enviar_email_novo_usuario(
                 nome, funcao,
                 email_adicional=email_adicional if email_adicional else None,
@@ -51,7 +53,6 @@ def banco_dados():
             
             if resultado['sucesso']:
                 msg = f'Usuário "{nome}" criado! E-mail enviado para {len(resultado["destinatarios"])} destinatário(s).'
-                
                 detalhes = []
                 if resultado.get('enviado_professor'):
                     detalhes.append("professor")
@@ -59,13 +60,11 @@ def banco_dados():
                     detalhes.append(email_adicional)
                 if detalhes:
                     msg += f' Incluindo: {", ".join(detalhes)}.'
-                
                 if email_adicional and not resultado.get('email_adicional_valido'):
                     msg += ' (e-mail adicional inválido, ignorado)'
-                
                 flash(msg, 'success')
             else:
-                flash(f'Usuário "{nome}" criado! (E-mail não enviado: {resultado.get("erro", "erro desconhecido")})', 'warning')
+                flash(f'Usuário "{nome}" criado! (E-mail não enviado)', 'warning')
         
         return redirect(url_for('users.banco_dados'))
     
@@ -97,7 +96,68 @@ def banco_dados():
                          titulo='Banco de Dados')
 
 
-# ============ AÇÕES ============
+# ============ EDIÇÃO (SEMANA 14 - NOVO) ============
+
+@bp.route('/editar-usuario/<int:usuario_id>', methods=['GET', 'POST'])
+def editar_usuario(usuario_id):
+    """Edita um usuário existente (nome e função)."""
+    usuario = Usuario.query.get_or_404(usuario_id)
+    funcoes_validas = current_app.config['FUNCOES']
+    
+    if request.method == 'POST':
+        novo_nome = request.form.get('nome', '').strip()
+        nova_funcao = request.form.get('funcao', 'User').strip()
+        
+        # Validações
+        if not novo_nome:
+            flash('O nome não pode ser vazio!', 'danger')
+            return redirect(url_for('users.editar_usuario', usuario_id=usuario.id))
+        
+        if nova_funcao not in funcoes_validas:
+            nova_funcao = 'User'
+        
+        # Verifica se o novo nome já existe em OUTRO usuário
+        duplicado = Usuario.query.filter(
+            db.func.lower(Usuario.nome) == db.func.lower(novo_nome),
+            Usuario.id != usuario.id
+        ).first()
+        
+        if duplicado:
+            flash(f'Já existe outro usuário com o nome "{novo_nome}"!', 'danger')
+            return redirect(url_for('users.editar_usuario', usuario_id=usuario.id))
+        
+        # Guarda os valores antigos para o flash
+        nome_antigo = usuario.nome
+        funcao_antiga = usuario.funcao
+        
+        # Atualiza
+        usuario.nome = novo_nome
+        usuario.funcao = nova_funcao
+        usuario.atualizado_em = datetime.utcnow()
+        db.session.commit()
+        
+        # Mensagem de feedback
+        mudancas = []
+        if nome_antigo != novo_nome:
+            mudancas.append(f'nome: "{nome_antigo}" → "{novo_nome}"')
+        if funcao_antiga != nova_funcao:
+            mudancas.append(f'função: {funcao_antiga} → {nova_funcao}')
+        
+        if mudancas:
+            flash(f'Usuário atualizado! ({"; ".join(mudancas)})', 'success')
+        else:
+            flash('Nenhuma alteração foi feita.', 'info')
+        
+        return redirect(url_for('users.banco_dados'))
+    
+    # GET: renderiza o formulário de edição
+    return render_template('editar_usuario.html',
+                         usuario=usuario,
+                         current_time=datetime.utcnow(),
+                         titulo='Editar Usuário')
+
+
+# ============ EXCLUSÃO (MANTIDA) ============
 
 @bp.route('/deletar-usuario/<int:usuario_id>')
 def deletar_usuario(usuario_id):
@@ -106,11 +166,13 @@ def deletar_usuario(usuario_id):
         nome = usuario.nome
         db.session.delete(usuario)
         db.session.commit()
-        flash(f'Usuário "{nome}" deletado!', 'danger')
+        flash(f'Usuário "{nome}" deletado com sucesso!', 'danger')
     else:
         flash('Usuário não encontrado!', 'danger')
     return redirect(url_for('users.banco_dados'))
 
+
+# ============ PROMOVER / REBAIXAR (MANTIDOS) ============
 
 @bp.route('/promover-usuario/<int:usuario_id>')
 def promover_usuario(usuario_id):
@@ -132,9 +194,10 @@ def rebaixar_usuario(usuario_id):
     return redirect(url_for('users.banco_dados'))
 
 
+# ============ TESTE DE E-MAIL (MANTIDO) ============
+
 @bp.route('/testar-email')
 def testar_email():
-    """Testa envio com opções da query string."""
     email_extra = request.args.get('email', '').strip()
     enviar_professor = request.args.get('professor', 'false').lower() == 'true'
     
