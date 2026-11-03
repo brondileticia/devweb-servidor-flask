@@ -1,26 +1,15 @@
 """
 Serviço responsável pelo envio e persistência de e-mails.
-Semana 15: e-mails de confirmação de conta, reset de senha e alteração de e-mail.
+Semana 15: cadastro administrativo, confirmação de conta, reset de senha,
+confirmação de novo e-mail e aviso de troca de senha.
 """
 from datetime import datetime
-import re
 import requests
 from flask import current_app, url_for
 
 from app import db
 from app.models import EmailEnviado
-
-
-# ============================================================
-# VALIDAÇÃO
-# ============================================================
-
-def validar_email(email):
-    """Valida formato básico de e-mail."""
-    if not email:
-        return False
-    padrao = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(padrao, email.strip()) is not None
+from app.services.validation_service import validar_email
 
 
 # ============================================================
@@ -54,6 +43,9 @@ def _enviar_email_generico(destinatarios, assunto, html, texto_curto=None):
     # Normaliza destinatários em lista
     if isinstance(destinatarios, str):
         destinatarios = [destinatarios]
+    
+    # Remove duplicatas mantendo a ordem
+    destinatarios = list(dict.fromkeys(destinatarios))
     
     from_addr = f"PTBDSWS <postmaster@{domain}>"
     url = f"https://api.mailgun.net/v3/{domain}/messages"
@@ -105,7 +97,7 @@ def _enviar_email_generico(destinatarios, assunto, html, texto_curto=None):
 
 
 # ============================================================
-# TEMPLATE HTML BASE PARA E-MAILS
+# TEMPLATES HTML PARA E-MAILS
 # ============================================================
 
 def _html_base(titulo, saudacao, corpo_html, cor_cabecalho='#2563eb'):
@@ -197,7 +189,7 @@ def _link_texto(url):
 
 def enviar_email_novo_usuario(nome_usuario, funcao, email_adicional=None, enviar_para_professor=False):
     """
-    Envia e-mail via Mailgun quando um novo usuário é cadastrado (painel admin).
+    Envia e-mail quando um novo usuário é cadastrado (painel admin).
     
     - SEMPRE envia para o e-mail institucional
     - Envia para o professor SOMENTE se enviar_para_professor=True
@@ -206,15 +198,20 @@ def enviar_email_novo_usuario(nome_usuario, funcao, email_adicional=None, enviar
     api_key = current_app.config['MAILGUN_API_KEY']
     if not api_key:
         print("⚠️ API key do Mailgun não configurada.")
-        return {'sucesso': False, 'destinatarios': [], 'erro': 'API key não configurada',
-                'email_adicional_valido': False, 'enviado_professor': False}
+        return {
+            'sucesso': False,
+            'destinatarios': [],
+            'erro': 'API key não configurada',
+            'email_adicional_valido': False,
+            'enviado_professor': False
+        }
     
     email_institucional = current_app.config['EMAIL_INSTITUCIONAL']
     email_professor = current_app.config['EMAIL_PROFESSOR']
     aluno_nome = current_app.config['ALUNO_NOME']
     aluno_prontuario = current_app.config['ALUNO_PRONTUARIO']
     
-    # Destinatários
+    # ============ DESTINATÁRIOS ============
     destinatarios = [email_institucional]
     if enviar_para_professor:
         destinatarios.append(email_professor)
@@ -222,11 +219,13 @@ def enviar_email_novo_usuario(nome_usuario, funcao, email_adicional=None, enviar
     email_adicional_valido = False
     if email_adicional:
         email_adicional = email_adicional.strip()
-        if validar_email(email_adicional) and email_adicional not in destinatarios:
+        # Usa a validação centralizada
+        valido, _ = validar_email(email_adicional)
+        if valido and email_adicional not in destinatarios:
             destinatarios.append(email_adicional)
             email_adicional_valido = True
     
-    # Corpo do e-mail
+    # ============ CORPO DO E-MAIL ============
     info_html = _info_box(f"""
         <p style="margin: 5px 0;"><strong>Prontuário do aluno:</strong> {aluno_prontuario}</p>
         <p style="margin: 5px 0;"><strong>Nome do aluno:</strong> {aluno_nome}</p>
@@ -235,10 +234,23 @@ def enviar_email_novo_usuario(nome_usuario, funcao, email_adicional=None, enviar
         <p style="margin: 5px 0;"><strong>Data e hora:</strong> {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}</p>
     """)
     
+    blocos_extra = ""
+    if enviar_para_professor:
+        blocos_extra += _info_box(
+            f'<p style="margin: 0; font-size: 13px;">✉️ Este e-mail também foi enviado para o professor: <strong>{email_professor}</strong></p>',
+            '#d1fae5', '#16a34a'
+        )
+    
+    if email_adicional_valido:
+        blocos_extra += _info_box(
+            f'<p style="margin: 0; font-size: 13px;">✉️ Este e-mail também foi enviado para: <strong>{email_adicional}</strong></p>',
+            '#dbeafe', '#2563eb'
+        )
+    
     html = _html_base(
         titulo="📧 Novo Usuário Cadastrado",
         saudacao="Um novo usuário foi cadastrado no sistema!",
-        corpo_html=info_html
+        corpo_html=info_html + blocos_extra
     )
     
     resultado = _enviar_email_generico(
@@ -263,11 +275,20 @@ def enviar_email_confirmacao(usuario):
     
     Args:
         usuario: instância de Usuario (com token_confirmacao)
+    
+    Returns:
+        dict: resultado do envio
     """
     token = usuario.token_confirmacao
     if not token:
         print("⚠️ Usuário sem token de confirmação.")
         return {'sucesso': False, 'erro': 'Sem token', 'destinatarios': []}
+    
+    # Valida o e-mail antes de enviar
+    valido, erro = validar_email(usuario.email)
+    if not valido:
+        print(f"⚠️ E-mail inválido: {erro}")
+        return {'sucesso': False, 'erro': erro, 'destinatarios': []}
     
     link = url_for('auth.confirmar_email', token=token, _external=True)
     
@@ -314,7 +335,15 @@ def enviar_email_reset_senha(usuario, token):
     Args:
         usuario: instância de Usuario
         token: str (token_reset gerado)
+    
+    Returns:
+        dict: resultado do envio
     """
+    valido, erro = validar_email(usuario.email)
+    if not valido:
+        print(f"⚠️ E-mail inválido: {erro}")
+        return {'sucesso': False, 'erro': erro, 'destinatarios': []}
+    
     link = url_for('auth.resetar_senha', token=token, _external=True)
     
     corpo = f"""
@@ -363,7 +392,15 @@ def enviar_email_confirmacao_novo_email(usuario, novo_email, token):
         usuario: instância de Usuario (dados atuais)
         novo_email: str (endereço que será confirmado)
         token: str (token gerado para a troca)
+    
+    Returns:
+        dict: resultado do envio
     """
+    valido, erro = validar_email(novo_email)
+    if not valido:
+        print(f"⚠️ Novo e-mail inválido: {erro}")
+        return {'sucesso': False, 'erro': erro, 'destinatarios': []}
+    
     link = url_for('auth.confirmar_novo_email', token=token, _external=True)
     
     corpo = f"""
@@ -407,14 +444,25 @@ def enviar_email_confirmacao_novo_email(usuario, novo_email, token):
 
 
 # ============================================================
-# 5. E-MAIL DE AVISO DE TROCA DE SENHA (opcional — segurança)
+# 5. E-MAIL DE AVISO DE TROCA DE SENHA (segurança)
 # ============================================================
 
 def enviar_email_aviso_senha_alterada(usuario):
     """
     Envia e-mail de aviso após uma troca de senha bem-sucedida.
-    Recomendado por boas práticas de segurança.
+    Boa prática de segurança: informa ao usuário caso não tenha sido ele.
+    
+    Args:
+        usuario: instância de Usuario
+    
+    Returns:
+        dict: resultado do envio
     """
+    valido, erro = validar_email(usuario.email)
+    if not valido:
+        print(f"⚠️ E-mail inválido: {erro}")
+        return {'sucesso': False, 'erro': erro, 'destinatarios': []}
+    
     corpo = f"""
     <p style="margin: 0 0 15px 0; font-size: 15px;">
         Sua senha foi alterada com sucesso em 
