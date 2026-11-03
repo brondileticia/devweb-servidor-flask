@@ -1,121 +1,77 @@
-"""
-Modelos do banco de dados.
-"""
-from datetime import datetime
+from datetime import datetime, timedelta
+import secrets
+from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 
 
 class Usuario(db.Model):
-    """Representa um usuário do sistema."""
     __tablename__ = 'usuarios'
     
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    username = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(256), nullable=False)
     funcao = db.Column(db.String(50), nullable=False, default='User')
+    
+    # Controle de confirmação de e-mail
+    email_confirmado = db.Column(db.Boolean, default=False)
+    token_confirmacao = db.Column(db.String(100), nullable=True)
+    
+    # Controle de reset de senha
+    token_reset = db.Column(db.String(100), nullable=True)
+    token_reset_expira = db.Column(db.DateTime, nullable=True)
+    
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
     atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    def __init__(self, nome, funcao='User'):
+    def __init__(self, nome, email, username, password, funcao='User'):
         self.nome = nome.strip()
-        self.funcao = funcao.strip()
+        self.email = email.strip().lower()
+        self.username = username.strip().lower()
+        self.set_password(password)
+        self.funcao = funcao
+        self.gerar_token_confirmacao()
+    
+    # ============ SENHA ============
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+    
+    # ============ CONFIRMAÇÃO DE E-MAIL ============
+    def gerar_token_confirmacao(self):
+        self.token_confirmacao = secrets.token_urlsafe(32)
+        return self.token_confirmacao
+    
+    def confirmar_email(self, token):
+        if self.token_confirmacao == token:
+            self.email_confirmado = True
+            self.token_confirmacao = None
+            db.session.commit()
+            return True
+        return False
+    
+    # ============ RESET DE SENHA ============
+    def gerar_token_reset(self):
+        self.token_reset = secrets.token_urlsafe(32)
+        self.token_reset_expira = datetime.utcnow() + timedelta(hours=1)
+        db.session.commit()
+        return self.token_reset
+    
+    def validar_token_reset(self, token):
+        if (self.token_reset == token and 
+            self.token_reset_expira and 
+            datetime.utcnow() < self.token_reset_expira):
+            return True
+        return False
+    
+    def resetar_senha(self, nova_senha):
+        self.set_password(nova_senha)
+        self.token_reset = None
+        self.token_reset_expira = None
+        db.session.commit()
     
     def __repr__(self):
-        return f'<Usuario {self.nome} - {self.funcao}>'
-    
-    def salvar(self):
-        try:
-            db.session.add(self)
-            db.session.commit()
-            return True
-        except Exception as e:
-            db.session.rollback()
-            print(f"Erro ao salvar: {e}")
-            return False
-    
-    def atualizar(self, novo_nome=None, nova_funcao=None):
-        """Atualiza nome e/ou função do usuário."""
-        try:
-            if novo_nome and novo_nome.strip():
-                self.nome = novo_nome.strip()
-            if nova_funcao and nova_funcao.strip():
-                self.funcao = nova_funcao.strip()
-            self.atualizado_em = datetime.utcnow()
-            db.session.commit()
-            return True
-        except Exception as e:
-            db.session.rollback()
-            print(f"Erro ao atualizar: {e}")
-            return False
-    
-    def deletar(self):
-        try:
-            db.session.delete(self)
-            db.session.commit()
-            return True
-        except Exception as e:
-            db.session.rollback()
-            return False
-    
-    def promover(self):
-        ciclo = {'User': 'Moderator', 'Moderator': 'Administrator', 'Administrator': 'Administrator'}
-        self.funcao = ciclo.get(self.funcao, 'User')
-        db.session.commit()
-        return True
-    
-    def rebaixar(self):
-        ciclo = {'Administrator': 'Moderator', 'Moderator': 'User', 'User': 'User'}
-        self.funcao = ciclo.get(self.funcao, 'User')
-        db.session.commit()
-        return True
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'nome': self.nome,
-            'funcao': self.funcao,
-            'criado_em': self.criado_em.isoformat() if self.criado_em else None
-        }
-
-
-class EmailEnviado(db.Model):
-    """Registra os e-mails enviados pelo sistema."""
-    __tablename__ = 'emails_enviados'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    remetente = db.Column(db.String(200), nullable=False)
-    destinatarios = db.Column(db.Text, nullable=False)
-    assunto = db.Column(db.String(300), nullable=False)
-    texto = db.Column(db.Text, nullable=False)
-    enviado_em = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    sucesso = db.Column(db.Boolean, default=True)
-    
-    def __init__(self, remetente, destinatarios, assunto, texto, sucesso=True):
-        self.remetente = remetente
-        self.destinatarios = destinatarios
-        self.assunto = assunto
-        self.texto = texto
-        self.sucesso = sucesso
-    
-    def __repr__(self):
-        return f'<EmailEnviado {self.assunto}>'
-    
-    def salvar(self):
-        try:
-            db.session.add(self)
-            db.session.commit()
-            return True
-        except Exception as e:
-            db.session.rollback()
-            print(f"Erro ao salvar e-mail: {e}")
-            return False
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'remetente': self.remetente,
-            'destinatarios': self.destinatarios,
-            'assunto': self.assunto,
-            'texto': self.texto,
-            'enviado_em': self.enviado_em.isoformat() if self.enviado_em else None,
-            'sucesso': self.sucesso
-        }
+        return f'<Usuario {self.username} - {self.email}>'
