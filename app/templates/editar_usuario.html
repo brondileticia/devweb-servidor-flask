@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}PTBDSWS - Editar Usuário{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>✏️ Editar Usuário</h1>
+    <p class="lead">Atualize o nome e/ou a função do usuário</p>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="panel panel-warning">
+            <div class="panel-heading">
+                <h3 class="panel-title">
+                    <span class="glyphicon glyphicon-edit"></span> 
+                    Editando: <strong>{{ usuario.nome }}</strong>
+                </h3>
+            </div>
+            <div class="panel-body">
+                <form method="POST" action="{{ url_for('users.editar_usuario', usuario_id=usuario.id) }}">
+                    
+                    {# Info do usuário #}
+                    <div class="well well-sm">
+                        <p style="margin: 0;">
+                            <strong>ID:</strong> {{ usuario.id }} <br>
+                            <strong>Criado em:</strong> 
+                            {% if usuario.criado_em %}
+                                {{ moment(usuario.criado_em).format('LLL') }}
+                            {% endif %}
+                            <br>
+                            <strong>Última atualização:</strong>
+                            {% if usuario.atualizado_em %}
+                                {{ moment(usuario.atualizado_em).format('LLL') }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    {# Campo Nome #}
+                    <div class="form-group">
+                        <label for="nome">Nome:</label>
+                        <input type="text" 
+                               class="form-control input-lg" 
+                               id="nome" 
+                               name="nome" 
+                               value="{{ usuario.nome }}"
+                               required
+                               autofocus>
+                    </div>
+                    
+                    {# Campo Função #}
+                    <div class="form-group">
+                        <label for="funcao">Função:</label>
+                        <select class="form-control input-lg" id="funcao" name="funcao">
+                            {% for funcao in funcoes %}
+                            <option value="{{ funcao }}" 
+                                    {% if usuario.funcao == funcao %}selected{% endif %}>
+                                {% if funcao == 'Administrator' %}👑{% elif funcao == 'Moderator' %}🛡️{% else %}👤{% endif %}
+                                {{ funcao }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <hr>
+                    
+                    {# Botões #}
+                    <div class="form-group" style="margin: 0;">
+                        <button type="submit" class="btn btn-warning btn-lg">
+                            <span class="glyphicon glyphicon-save"></span> 
+                            Salvar Alterações
+                        </button>
+                        <a href="{{ url_for('users.banco_dados') }}" 
+                           class="btn btn-default btn-lg">
+                            <span class="glyphicon glyphicon-arrow-left"></span> 
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="panel-footer">
+                <a href="{{ url_for('users.deletar_usuario', usuario_id=usuario.id) }}"
+                   class="btn btn-danger btn-sm"
+                   onclick="return confirm('⚠️ Tem certeza que deseja DELETAR o usuário {{ usuario.nome }}? Esta ação não pode ser desfeita!')">
+                    <span class="glyphicon glyphicon-trash"></span> 
+                    Deletar este usuário
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
