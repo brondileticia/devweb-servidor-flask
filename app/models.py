@@ -33,16 +33,18 @@ class Usuario(db.Model):
             return False
     
     def atualizar(self, novo_nome=None, nova_funcao=None):
+        """Atualiza nome e/ou função do usuário."""
         try:
-            if novo_nome:
+            if novo_nome and novo_nome.strip():
                 self.nome = novo_nome.strip()
-            if nova_funcao:
+            if nova_funcao and nova_funcao.strip():
                 self.funcao = nova_funcao.strip()
             self.atualizado_em = datetime.utcnow()
             db.session.commit()
             return True
         except Exception as e:
             db.session.rollback()
+            print(f"Erro ao atualizar: {e}")
             return False
     
     def deletar(self):
