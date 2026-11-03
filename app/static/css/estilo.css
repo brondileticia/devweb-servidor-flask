@@ -1,108 +1,96 @@
-/* Estilos personalizados */
+/* ============================================
+   ESTILO GLOBAL - SEMANA 15
+   ============================================ */
+
 body {
-    padding-bottom: 70px;
-    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f8f9fa; /* bg-light do Bootstrap */
 }
 
-.footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    background-color: #2c3e50;
-    color: #ecf0f1;
-    padding: 15px 0;
-    border-top: 3px solid #3498db;
+/* Cores Primárias (podem ser sobrescritas via CSS Variables do Bootstrap) */
+:root {
+    --bs-primary: #2563eb;
+    --bs-primary-rgb: 37, 99, 235;
 }
 
-.footer .text-muted {
-    color: #bdc3c7 !important;
+/* Navbar */
+.navbar-brand {
+    font-size: 1.25rem;
+    letter-spacing: -0.5px;
 }
 
-.navbar-inverse {
-    background-color: #2c3e50;
-    border-color: #1a252f;
+/* Cards (substituem os antigos painéis) */
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.navbar-inverse .navbar-brand {
-    color: #ecf0f1;
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
-.navbar-inverse .navbar-nav > li > a {
-    color: #bdc3c7;
+.card-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-weight: 600;
+    border-radius: 0.75rem 0.75rem 0 0 !important;
 }
 
-.navbar-inverse .navbar-nav > .active > a {
-    background-color: #3498db;
-    color: white;
+/* Botões */
+.btn {
+    border-radius: 0.5rem;
+    font-weight: 500;
+    padding: 0.5rem 1.25rem;
 }
 
-/* Cards com hover */
-.card-hover {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
+.btn-primary {
+    background-color: #2563eb;
+    border-color: #2563eb;
 }
 
-.card-hover:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+.btn-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
 }
 
-/* Painéis coloridos */
-.panel-primary > .panel-heading {
-    background-color: #3498db;
-    border-color: #2980b9;
+/* Formulários */
+.form-control, .form-select {
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
 }
 
-.panel-success > .panel-heading {
-    background-color: #27ae60;
-    border-color: #229954;
+.form-control:focus, .form-select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
 }
 
-.panel-info > .panel-heading {
-    background-color: #2980b9;
-    border-color: #2471a3;
+/* Tabelas */
+.table-hover tbody tr:hover {
+    background-color: rgba(37, 99, 235, 0.04);
 }
 
-.panel-warning > .panel-heading {
-    background-color: #f39c12;
-    border-color: #d68910;
+/* Alertas */
+.alert {
+    border-radius: 0.5rem;
+    border: none;
 }
 
-.panel-danger > .panel-heading {
-    background-color: #e74c3c;
-    border-color: #cb4335;
-}
+/* Utilitários */
+.text-primary { color: #2563eb !important; }
+.bg-primary { background-color: #2563eb !important; }
 
-/* Animações */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.page-header {
-    animation: fadeIn 0.5s ease-in;
-}
-
-.panel {
-    animation: fadeIn 0.7s ease-in;
-    transition: box-shadow 0.3s ease;
-}
-
-.panel:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-/* Responsividade */
+/* Responsividade extra */
 @media (max-width: 768px) {
-    .footer {
-        position: relative;
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     
-    body {
-        padding-bottom: 0;
-    }
-    
-    .page-header h1 {
-        font-size: 24px;
+    .card-body {
+        padding: 1rem;
     }
 }
