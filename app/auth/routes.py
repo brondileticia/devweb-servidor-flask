@@ -1,11 +1,34 @@
-from datetime import datetime
-from flask import (render_template, request, flash, redirect, 
-                   url_for, session, current_app)
+import secrets
+from urllib.parse import urlparse
+
+from flask import render_template, request, flash, redirect, url_for, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+
 from app.auth import bp
 from app import db
 from app.models import Usuario
-from app.services.email_service import enviar_email_confirmacao, enviar_email_reset_senha
+from app.services.email_service import (
+    enviar_email_confirmacao,
+    enviar_email_reset_senha,
+    enviar_email_confirmacao_novo_email,
+    enviar_email_aviso_senha_alterada,
+)
+from app.services.validation_service import (
+    validar_cadastro,
+    validar_email,
+    validar_senha,
+    validar_confirmacao_senha,
+)
+
+
+def _url_segura(destino):
+    """Aceita só caminhos internos (evita redirecionar para outro site)."""
+    if not destino:
+        return None
+    partes = urlparse(destino)
+    if partes.netloc or partes.scheme or not destino.startswith('/'):
+        return None
+    return destino
 
 
 # ============ LOGIN ============
@@ -14,29 +37,31 @@ from app.services.email_service import enviar_email_confirmacao, enviar_email_re
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.home'))
-    
+
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip().lower()
         senha = request.form.get('senha', '')
-        
+        lembrar = request.form.get('lembrar') == 'on'
+
         # Busca por email OU username
         usuario = Usuario.query.filter(
             (Usuario.email == identificador) | (Usuario.username == identificador)
         ).first()
-        
+
         if usuario and usuario.check_password(senha):
             if not usuario.email_confirmado:
                 flash('Confirme seu e-mail antes de fazer login. Verifique sua caixa de entrada.', 'warning')
                 return redirect(url_for('auth.login'))
-            
-            login_user(usuario)
+
+            login_user(usuario, remember=lembrar)
             flash(f'Bem-vindo(a), {usuario.nome}!', 'success')
-            next_page = request.args.get('next')
+            next_page = _url_segura(request.args.get('next'))
             return redirect(next_page or url_for('main.home'))
-        else:
-            flash('E-mail/usuário ou senha inválidos.', 'danger')
-    
-    return render_template('auth/login.html', titulo='Login')
+
+        flash('E-mail/usuário ou senha inválidos.', 'danger')
+        return render_template('login.html', titulo='Login', identificador=identificador)
+
+    return render_template('login.html', titulo='Login')
 
 
 # ============ CADASTRO ============
@@ -45,60 +70,46 @@ def login():
 def cadastro():
     if current_user.is_authenticated:
         return redirect(url_for('main.home'))
-    
+
     if request.method == 'POST':
         nome = request.form.get('nome', '').strip()
         email = request.form.get('email', '').strip().lower()
         username = request.form.get('username', '').strip().lower()
         senha = request.form.get('senha', '')
         confirmacao = request.form.get('confirmacao', '')
-        
-        erros = []
-        
-        if not nome or len(nome) < 3:
-            erros.append('Nome deve ter pelo menos 3 caracteres.')
-        
-        if not email or '@' not in email:
-            erros.append('E-mail inválido.')
-        
-        # Validação de username (recomendação)
-        if not username or len(username) < 3:
-            erros.append('Nome de usuário deve ter pelo menos 3 caracteres.')
-        elif not username.replace('_', '').isalnum():
-            erros.append('Nome de usuário deve conter apenas letras, números e underline (_).')
-        elif username[0].isdigit():
-            erros.append('Nome de usuário não pode começar com número.')
-        
-        if len(senha) < 8:
-            erros.append('Senha deve ter pelo menos 8 caracteres.')
-        
-        if senha != confirmacao:
-            erros.append('Senhas não conferem.')
-        
-        # Verifica duplicatas
-        if Usuario.query.filter_by(email=email).first():
+
+        # Usa o serviço de validação centralizado
+        _, erros = validar_cadastro(nome, email, username, senha, confirmacao)
+
+        if email and Usuario.query.filter_by(email=email).first():
             erros.append('Este e-mail já está cadastrado.')
-        if Usuario.query.filter_by(username=username).first():
+        if username and Usuario.query.filter_by(username=username).first():
             erros.append('Este nome de usuário já está em uso.')
-        
+
         if erros:
             for erro in erros:
                 flash(erro, 'danger')
-            return render_template('auth/cadastro.html', titulo='Cadastro',
-                                 nome=nome, email=email, username=username)
-        
-        # Cria usuário
-        novo = Usuario(nome, email, username, senha)
+            return render_template('cadastro.html', titulo='Cadastro',
+                                   nome=nome, email=email, username=username)
+
+        novo = Usuario(nome, email=email, username=username, password=senha)
         db.session.add(novo)
         db.session.commit()
-        
-        # Envia e-mail de confirmação
-        enviar_email_confirmacao(novo)
-        
-        flash('Conta criada! Verifique seu e-mail para confirmar o cadastro.', 'success')
+
+        resultado = enviar_email_confirmacao(novo)
+        if resultado['sucesso']:
+            flash('Conta criada! Verifique seu e-mail para confirmar o cadastro.', 'success')
+        elif current_app.debug:
+            # Só em desenvolvimento: sem Mailgun configurado, mostra o link na tela
+            link = url_for('auth.confirmar_email', token=novo.token_confirmacao, _external=True)
+            flash(f'Conta criada! O e-mail não foi enviado (modo desenvolvimento). '
+                  f'Confirme por este link: {link}', 'warning')
+        else:
+            flash('Conta criada, mas não foi possível enviar o e-mail de confirmação. '
+                  'Fale com o administrador.', 'warning')
         return redirect(url_for('auth.login'))
-    
-    return render_template('auth/cadastro.html', titulo='Cadastro')
+
+    return render_template('cadastro.html', titulo='Cadastro')
 
 
 # ============ CONFIRMAÇÃO DE E-MAIL ============
@@ -106,16 +117,12 @@ def cadastro():
 @bp.route('/confirmar/<token>')
 def confirmar_email(token):
     usuario = Usuario.query.filter_by(token_confirmacao=token).first()
-    
-    if not usuario:
-        flash('Link de confirmação inválido ou expirado.', 'danger')
-        return redirect(url_for('auth.login'))
-    
-    if usuario.confirmar_email(token):
+
+    if usuario and usuario.confirmar_email(token):
         flash('E-mail confirmado com sucesso! Você já pode fazer login.', 'success')
     else:
-        flash('Erro ao confirmar e-mail.', 'danger')
-    
+        flash('Link de confirmação inválido ou já utilizado.', 'danger')
+
     return redirect(url_for('auth.login'))
 
 
@@ -135,17 +142,17 @@ def logout():
 def esqueci_senha():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
-        usuario = Usuario.query.filter_by(email=email).first()
-        
-        if usuario:
+        usuario = Usuario.query.filter_by(email=email).first() if email else None
+
+        if usuario and usuario.pode_logar:
             token = usuario.gerar_token_reset()
             enviar_email_reset_senha(usuario, token)
-        
+
         # Sempre mostra a mesma mensagem (segurança: não revela se o e-mail existe)
         flash('Se o e-mail estiver cadastrado, você receberá instruções para redefinir a senha.', 'info')
         return redirect(url_for('auth.login'))
-    
-    return render_template('auth/esqueci_senha.html', titulo='Esqueci minha senha')
+
+    return render_template('esqueci_senha.html', titulo='Esqueci minha senha')
 
 
 # ============ REDEFINIR SENHA ============
@@ -153,28 +160,27 @@ def esqueci_senha():
 @bp.route('/resetar-senha/<token>', methods=['GET', 'POST'])
 def resetar_senha(token):
     usuario = Usuario.query.filter_by(token_reset=token).first()
-    
+
     if not usuario or not usuario.validar_token_reset(token):
         flash('Link inválido ou expirado. Solicite um novo.', 'danger')
         return redirect(url_for('auth.esqueci_senha'))
-    
+
     if request.method == 'POST':
         nova_senha = request.form.get('senha', '')
         confirmacao = request.form.get('confirmacao', '')
-        
-        if len(nova_senha) < 8:
-            flash('Senha deve ter pelo menos 8 caracteres.', 'danger')
-            return render_template('auth/resetar_senha.html', token=token, titulo='Redefinir senha')
-        
-        if nova_senha != confirmacao:
-            flash('Senhas não conferem.', 'danger')
-            return render_template('auth/resetar_senha.html', token=token, titulo='Redefinir senha')
-        
+
+        for valido, erro in (validar_senha(nova_senha),
+                             validar_confirmacao_senha(nova_senha, confirmacao)):
+            if not valido:
+                flash(erro, 'danger')
+                return render_template('resetar_senha.html', token=token, titulo='Redefinir senha')
+
         usuario.resetar_senha(nova_senha)
+        enviar_email_aviso_senha_alterada(usuario)
         flash('Senha redefinida com sucesso! Faça login.', 'success')
         return redirect(url_for('auth.login'))
-    
-    return render_template('auth/resetar_senha.html', token=token, titulo='Redefinir senha')
+
+    return render_template('resetar_senha.html', token=token, titulo='Redefinir senha')
 
 
 # ============ ALTERAR SENHA (logado) ============
@@ -186,25 +192,24 @@ def alterar_senha():
         senha_atual = request.form.get('senha_atual', '')
         nova_senha = request.form.get('nova_senha', '')
         confirmacao = request.form.get('confirmacao', '')
-        
+
         if not current_user.check_password(senha_atual):
             flash('Senha atual incorreta.', 'danger')
             return redirect(url_for('auth.alterar_senha'))
-        
-        if len(nova_senha) < 8:
-            flash('Nova senha deve ter pelo menos 8 caracteres.', 'danger')
-            return redirect(url_for('auth.alterar_senha'))
-        
-        if nova_senha != confirmacao:
-            flash('Senhas não conferem.', 'danger')
-            return redirect(url_for('auth.alterar_senha'))
-        
+
+        for valido, erro in (validar_senha(nova_senha),
+                             validar_confirmacao_senha(nova_senha, confirmacao)):
+            if not valido:
+                flash(erro, 'danger')
+                return redirect(url_for('auth.alterar_senha'))
+
         current_user.set_password(nova_senha)
         db.session.commit()
+        enviar_email_aviso_senha_alterada(current_user)
         flash('Senha alterada com sucesso!', 'success')
         return redirect(url_for('main.home'))
-    
-    return render_template('auth/alterar_senha.html', titulo='Alterar senha')
+
+    return render_template('alterar_senha.html', titulo='Alterar senha')
 
 
 # ============ ALTERAR E-MAIL ============
@@ -215,49 +220,53 @@ def alterar_email():
     if request.method == 'POST':
         novo_email = request.form.get('email', '').strip().lower()
         senha = request.form.get('senha', '')
-        
+
         if not current_user.check_password(senha):
             flash('Senha incorreta.', 'danger')
             return redirect(url_for('auth.alterar_email'))
-        
-        if '@' not in novo_email:
-            flash('E-mail inválido.', 'danger')
+
+        valido, erro = validar_email(novo_email)
+        if not valido:
+            flash(erro, 'danger')
             return redirect(url_for('auth.alterar_email'))
-        
+
         if Usuario.query.filter_by(email=novo_email).first():
             flash('Este e-mail já está em uso.', 'danger')
             return redirect(url_for('auth.alterar_email'))
-        
+
         # Gera token para o NOVO e-mail
         token = secrets.token_urlsafe(32)
         session['novo_email_pendente'] = novo_email
         session['token_novo_email'] = token
-        
+
         enviar_email_confirmacao_novo_email(current_user, novo_email, token)
-        
+
         flash(f'Um link de confirmação foi enviado para {novo_email}. Confirme para efetivar a troca.', 'info')
         return redirect(url_for('main.home'))
-    
-    return render_template('auth/alterar_email.html', titulo='Alterar e-mail')
+
+    return render_template('alterar_email.html', titulo='Alterar e-mail')
 
 
 @bp.route('/confirmar-novo-email/<token>')
 @login_required
 def confirmar_novo_email(token):
-    if session.get('token_novo_email') != token:
-        flash('Token inválido.', 'danger')
-        return redirect(url_for('main.home'))
-    
+    token_sessao = session.get('token_novo_email')
     novo_email = session.get('novo_email_pendente')
-    if not novo_email:
-        flash('Nenhuma alteração pendente.', 'warning')
+
+    if not token_sessao or not secrets.compare_digest(token_sessao, token) or not novo_email:
+        flash('Link inválido ou nenhuma alteração pendente.', 'danger')
         return redirect(url_for('main.home'))
-    
+
+    # Alguém pode ter usado esse e-mail enquanto o link não era clicado
+    if Usuario.query.filter_by(email=novo_email).first():
+        flash('Este e-mail já está em uso por outra conta.', 'danger')
+        return redirect(url_for('main.home'))
+
     current_user.email = novo_email
     db.session.commit()
-    
+
     session.pop('novo_email_pendente', None)
     session.pop('token_novo_email', None)
-    
+
     flash('E-mail alterado com sucesso!', 'success')
     return redirect(url_for('main.home'))
