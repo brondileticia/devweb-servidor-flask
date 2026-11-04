@@ -1,0 +1,10 @@
+Flask==2.3.3
+Flask-Login==0.6.3
+Flask-Moment==1.0.5
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.36
+Werkzeug==2.3.7
+Jinja2==3.1.2
+itsdangerous==2.1.2
+click==8.1.7
+requests==2.32.3

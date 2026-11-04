@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cabecalho %}
+{% block title %}E-mails Enviados — PTBDSWS{% endblock %}
+
+{% block content %}
+{% call cabecalho('E-mails enviados', 'Notificações de cadastro, confirmação de conta e redefinição de senha.', 'Semana 12') %}
+    {% if emails %}
+    <form method="POST" action="{{ url_for('emails.limpar_emails') }}"
+          data-confirmar="Tem certeza que deseja limpar TODO o histórico de e-mails?">
+        <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash me-2"></i>Limpar histórico</button>
+    </form>
+    {% endif %}
+{% endcall %}
+
+<div class="row g-3 mb-4">
+    {% for rotulo, valor, icone, cor in [
+        ('Total', total_emails, 'bi-envelope', 'primary'),
+        ('Enviados', total_sucesso, 'bi-check-circle', 'success'),
+        ('Falhas', total_falha, 'bi-x-circle', 'danger'),
+    ] %}
+    <div class="col-sm-4">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <span class="icon-chip bg-{{ cor }}-subtle text-{{ cor }}-emphasis"><i class="bi {{ icone }}"></i></span>
+                <div>
+                    <div class="stat-label">{{ rotulo }}</div>
+                    <div class="stat-value">{{ valor }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <div class="card-header"><i class="bi bi-clock-history me-2"></i>Histórico</div>
+    {% if emails %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Assunto</th>
+                    <th>Para</th>
+                    <th class="d-none d-lg-table-cell">De</th>
+                    <th>Data/Hora</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for email in emails %}
+                <tr>
+                    <td class="text-muted">{{ email.id }}</td>
+                    <td>
+                        <div class="fw-semibold">{{ email.assunto }}</div>
+                        <small class="text-muted">{{ email.texto }}</small>
+                    </td>
+                    <td class="small"><code>{{ email.destinatarios }}</code></td>
+                    <td class="small text-muted d-none d-lg-table-cell">{{ email.remetente }}</td>
+                    <td class="small text-nowrap">{% if email.enviado_em %}{{ moment(email.enviado_em).format('DD/MM/YYYY HH:mm') }}{% endif %}</td>
+                    <td>
+                        {% if email.sucesso %}
+                        <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-check-lg me-1"></i>OK</span>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger-emphasis"><i class="bi bi-x-lg me-1"></i>Falha</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-envelope-open"></i>
+        <h3 class="h5">Nenhum e-mail enviado ainda</h3>
+        <p>Os e-mails aparecem aqui quando um usuário é cadastrado.</p>
+        <a href="{{ url_for('users.banco_dados') }}" class="btn btn-primary"><i class="bi bi-person-plus me-2"></i>Cadastrar usuário</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Início — PTBDSWS{% endblock %}
+
+{% block content %}
+<section class="card border-0 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);">
+    <div class="card-body p-4 p-lg-5 text-white">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <span class="badge rounded-pill bg-white bg-opacity-25 mb-3">Avaliações contínuas · {{ ano_atual }}</span>
+                <h1 class="display-6 fw-bold mb-2">
+                    {% if current_user.is_authenticated %}Olá, {{ current_user.nome.split()[0] }}!{% else %}Central de Atividades{% endif %}
+                </h1>
+                <p class="lead mb-0 text-white opacity-75">Todas as atividades de Desenvolvimento Web Servidor em um só lugar.</p>
+            </div>
+            <div class="col-lg-4">
+                <div class="d-flex gap-3 justify-content-lg-end">
+                    <div class="text-center px-3">
+                        <div class="stat-value">{{ paginas|length }}</div>
+                        <div class="small text-white opacity-75 text-nowrap">atividades</div>
+                    </div>
+                    <div class="vr bg-white opacity-25"></div>
+                    <div class="text-center px-3">
+                        <div class="stat-value">{{ total_usuarios_badge }}</div>
+                        <div class="small text-white opacity-75 text-nowrap">usuários</div>
+                    </div>
+                    <div class="vr bg-white opacity-25"></div>
+                    <div class="text-center px-3">
+                        <div class="stat-value">{{ total_emails_badge }}</div>
+                        <div class="small text-white opacity-75 text-nowrap">e-mails</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 mb-0">Atividades</h2>
+    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ moment(current_time).format('LLL') }}</small>
+</div>
+
+<div class="row g-3 g-lg-4">
+    {% for pagina in paginas %}
+    <div class="col-sm-6 col-lg-4 col-xl-3">
+        <a href="{{ url_for(pagina.endpoint) }}" class="card card-link h-100">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="icon-chip bg-{{ pagina.cor }}-subtle text-{{ pagina.cor }}-emphasis">
+                        <i class="bi {{ pagina.icone }}"></i>
+                    </span>
+                    <span class="badge rounded-pill text-bg-light border fw-medium">{{ pagina.aula }}</span>
+                </div>
+                <h3 class="h6 mb-1">{{ pagina.titulo }}</h3>
+                <p class="small text-muted mb-3">{{ pagina.descricao }}</p>
+                <span class="mt-auto small fw-semibold text-primary">
+                    Acessar <i class="bi bi-arrow-right seta d-inline-block"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

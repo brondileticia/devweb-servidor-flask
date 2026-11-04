@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cabecalho %}
+{% block title %}Formulário — PTBDSWS{% endblock %}
+
+{% block content %}
+{{ cabecalho('Formulário de Nome', 'Exemplo do padrão Post/Redirect/Get usando a sessão.', 'Extra') }}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 d-flex flex-column gap-4">
+        <div class="card text-center">
+            <div class="card-body py-5">
+                <span class="icon-chip icon-chip-lg {{ 'bg-success-subtle text-success-emphasis' if nome else 'bg-primary-subtle text-primary-emphasis' }} mb-3">
+                    <i class="bi {{ 'bi-emoji-smile' if nome else 'bi-chat-dots' }}"></i>
+                </span>
+                <h2 class="display-6 fw-bold mb-1">Hello{{ ', ' ~ nome if nome }}!</h2>
+                <p class="text-muted mb-0">{{ 'Bem-vindo(a) de volta!' if nome else 'Aguardando você digitar seu nome…' }}</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-person me-2"></i>What is your name?</div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('main.formulario') }}">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control" id="nome" name="nome" aria-label="Nome"
+                               placeholder="Digite seu nome" value="{{ nome or '' }}" required autofocus>
+                        <button type="submit" class="btn btn-primary px-4">Enviar</button>
+                    </div>
+                </form>
+                {% if nome %}
+                <form method="POST" action="{{ url_for('main.formulario') }}" class="mt-3"
+                      data-confirmar="Tem certeza que deseja limpar o nome?">
+                    <input type="hidden" name="acao" value="limpar">
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0">
+                        <i class="bi bi-trash me-1"></i>Limpar nome
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-7">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-lightbulb me-2"></i>Como funciona</div>
+                    <div class="card-body">
+                        <ul class="mb-0 d-grid gap-2 ps-3">
+                            <li>O nome é armazenado na <strong>sessão</strong></li>
+                            <li>Quando você envia um nome novo, o servidor detecta a mudança</li>
+                            <li>Um alerta informa a alteração</li>
+                            <li>O padrão <strong>PRG</strong> evita reenvio ao atualizar a página</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card h-100">
+                    <div class="card-header"><i class="bi bi-clock-history me-2"></i>Nomes anteriores</div>
+                    {% set historico = session.get('historico_nomes', []) %}
+                    {% if historico %}
+                    <ul class="list-group list-group-flush">
+                        {% for n in historico|reverse %}<li class="list-group-item">{{ n }}</li>{% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="card-body text-muted small">Nenhuma troca de nome ainda.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
