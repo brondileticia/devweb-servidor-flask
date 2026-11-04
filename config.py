@@ -24,7 +24,7 @@ class Config:
     
     # Dados do aluno
     ALUNO_NOME = 'Leticia Brondi Carvalheiro'
-    ALUNO_PRONTUARIO = 'SEU_PRONTUARIO'
+    ALUNO_PRONTUARIO = 'PT3037801'
     ALUNO_INSTITUICAO = 'IFSP'
     
     EMAIL_INSTITUCIONAL = 'l.brondi@aluno.ifsp.edu.br'
@@ -39,10 +39,11 @@ class Config:
         'User': 3
     }
     
+    # Ícones do Bootstrap Icons (bi-*) e cores do Bootstrap 5
     ICONES_FUNCOES = {
-        'Administrator': {'icone': 'glyphicon-king', 'cor': 'danger', 'label': 'label-danger'},
-        'Moderator': {'icone': 'glyphicon-eye-open', 'cor': 'warning', 'label': 'label-warning'},
-        'User': {'icone': 'glyphicon-user', 'cor': 'info', 'label': 'label-info'}
+        'Administrator': {'icone': 'bi-shield-fill-check', 'cor': 'danger'},
+        'Moderator': {'icone': 'bi-shield-fill', 'cor': 'warning'},
+        'User': {'icone': 'bi-person-fill', 'cor': 'info'}
     }
     
     DISCIPLINAS = ['DSWA5', 'DWBA4', 'Gestão de Projetos']
