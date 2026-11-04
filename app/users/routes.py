@@ -41,7 +41,7 @@ def banco_dados():
             db.session.commit()
             flash(f'Usuário "{nome}" já existe! Função atualizada!', 'warning')
         else:
-            novo = Usuario(nome, funcao)
+            novo = Usuario(nome, funcao=funcao)
             db.session.add(novo)
             db.session.commit()
             
@@ -64,44 +64,38 @@ def banco_dados():
                     msg += ' (e-mail adicional inválido, ignorado)'
                 flash(msg, 'success')
             else:
-                flash(f'Usuário "{nome}" criado! (E-mail não enviado)', 'warning')
+                flash(f'Usuário "{nome}" criado! (E-mail não enviado: {resultado.get("erro")})', 'warning')
         
         return redirect(url_for('users.banco_dados'))
     
-    # ============ GET ============
-    usuarios = Usuario.query.order_by(Usuario.id.desc()).all()
-    
+        # ============ GET ============
+    funcoes = current_app.config['FUNCOES']
+
+    # Agrupa do maior para o menor cargo (Administrator primeiro)
     usuarios_por_funcao = {}
-    for funcao in current_app.config['FUNCOES']:
+    for funcao in reversed(funcoes):
         grupo = Usuario.query.filter_by(funcao=funcao).order_by(Usuario.nome).all()
         if grupo:
             usuarios_por_funcao[funcao] = grupo
-    
-    contagem_por_funcao = {f: Usuario.query.filter_by(funcao=f).count()
-                          for f in current_app.config['FUNCOES']}
+
+    contagem_por_funcao = {f: Usuario.query.filter_by(funcao=f).count() for f in funcoes}
     total_usuarios = Usuario.query.count()
     funcoes_em_uso = sum(1 for q in contagem_por_funcao.values() if q > 0)
-    
-    return render_template('banco_dados.html',
-                         usuarios=usuarios,
-                         usuarios_por_funcao=usuarios_por_funcao,
-                         total_usuarios=total_usuarios,
-                         total_funcoes=len(current_app.config['FUNCOES']),
-                         funcoes_em_uso=funcoes_em_uso,
-                         contagem_por_funcao=contagem_por_funcao,
-                         total_admins=contagem_por_funcao.get('Administrator', 0),
-                         total_moderators=contagem_por_funcao.get('Moderator', 0),
-                         total_users=contagem_por_funcao.get('User', 0),
-                         current_time=datetime.utcnow(),
-                         titulo='Banco de Dados')
 
+    return render_template('banco_dados.html',
+                           usuarios_por_funcao=usuarios_por_funcao,
+                           total_usuarios=total_usuarios,
+                           total_funcoes=len(funcoes),
+                           funcoes_em_uso=funcoes_em_uso,
+                           contagem_por_funcao=contagem_por_funcao,
+                           titulo='Banco de Dados')
 
 # ============ EDIÇÃO (SEMANA 14 - NOVO) ============
 
 @bp.route('/editar-usuario/<int:usuario_id>', methods=['GET', 'POST'])
 def editar_usuario(usuario_id):
     """Edita um usuário existente (nome e função)."""
-    usuario = Usuario.query.get_or_404(usuario_id)
+    usuario = db.get_or_404(Usuario, usuario_id)
     funcoes_validas = current_app.config['FUNCOES']
     
     if request.method == 'POST':
@@ -133,7 +127,6 @@ def editar_usuario(usuario_id):
         # Atualiza
         usuario.nome = novo_nome
         usuario.funcao = nova_funcao
-        usuario.atualizado_em = datetime.utcnow()
         db.session.commit()
         
         # Mensagem de feedback
@@ -153,7 +146,6 @@ def editar_usuario(usuario_id):
     # GET: renderiza o formulário de edição
     return render_template('editar_usuario.html',
                          usuario=usuario,
-                         current_time=datetime.utcnow(),
                          titulo='Editar Usuário')
 
 
