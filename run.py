@@ -13,15 +13,13 @@ with app.app_context():
     print("✅ Tabelas criadas/verificadas!")
     
     if Usuario.query.count() == 0:
-        from app.models import Usuario
         usuarios_iniciais = [
-            Usuario("john", "Administrator"),
-            Usuario("susan", "User"),
-            Usuario("david", "User"),
-            Usuario("Professor Fabio Teixeira", "User")
+            Usuario("john", funcao="Administrator"),
+            Usuario("susan", funcao="User"),
+            Usuario("david", funcao="User"),
+            Usuario("Professor Fabio Teixeira", funcao="User"),
         ]
-        for u in usuarios_iniciais:
-            db.session.add(u)
+        db.session.add_all(usuarios_iniciais)
         db.session.commit()
         print("✅ Usuários iniciais criados!")
     
