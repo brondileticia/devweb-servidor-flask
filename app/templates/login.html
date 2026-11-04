@@ -31,11 +31,12 @@
                                 <i class="bi bi-person"></i>
                             </span>
                             <input type="text" 
-                                   class="form-control" 
-                                   id="identificador" 
-                                   name="identificador" 
-                                   placeholder="seu@email.com ou seu_usuario"
-                                   required
+                                    class="form-control" 
+                                    id="identificador" 
+                                    name="identificador" 
+                                    placeholder="seu@email.com ou seu_usuario"
+                                    value="{{ identificador or '' }}"
+                                    required
                                    autofocus>
                         </div>
                     </div>
