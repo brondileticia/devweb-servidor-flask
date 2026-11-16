@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cabecalho, badge_funcao %}
+{% block title %}Banco de Dados — PTBDSWS{% endblock %}
+
+{% block content %}
+{{ cabecalho('Banco de Dados', 'Cadastre usuários e gerencie suas funções.', 'Semana 12') }}
+
+{# ============ CONTADORES ============ #}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="stat-label mb-1"><i class="bi bi-people me-1"></i>Usuários</div>
+            <div class="stat-value">{{ total_usuarios }}</div>
+        </div></div>
+    </div>
+    {% for funcao in funcoes|reverse %}
+    {% set info = icones_funcoes[funcao] %}
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="stat-label mb-1"><i class="bi {{ info.icone }} text-{{ info.cor }} me-1"></i>{{ funcao }}</div>
+            <div class="stat-value">{{ contagem_por_funcao[funcao] }}</div>
+        </div></div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row g-4">
+    {# ============ COLUNA PRINCIPAL ============ #}
+    <div class="col-lg-8 d-flex flex-column gap-4">
+
+        {# Formulário de cadastro #}
+        <div class="card">
+            <div class="card-header"><i class="bi bi-person-plus me-2"></i>Cadastrar novo usuário</div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('users.banco_dados') }}">
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label for="nome" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="nome" name="nome"
+                                   placeholder="Nome do usuário" required autofocus>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="funcao" class="form-label">Função</label>
+                            <select class="form-select" id="funcao" name="funcao">
+                                {% for funcao in funcoes %}
+                                <option value="{{ funcao }}">{{ funcao }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="email_adicional" class="form-label">E-mail adicional <span class="text-muted fw-normal">(opcional)</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-at"></i></span>
+                                <input type="email" class="form-control" id="email_adicional" name="email_adicional"
+                                       placeholder="exemplo@dominio.com">
+                            </div>
+                            <div class="form-text">Também receberá a notificação de cadastro.</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check p-3 ps-5 rounded-3 bg-warning-subtle border border-warning-subtle">
+                                <input class="form-check-input" type="checkbox" name="enviar_professor" id="enviar_professor">
+                                <label class="form-check-label" for="enviar_professor">
+                                    <strong>Enviar também para o professor</strong><br>
+                                    <small class="text-muted">{{ email_professor }}</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mt-4">
+                        <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Sempre enviado para <code>{{ email_institucional }}</code></small>
+                        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-floppy me-2"></i>Cadastrar usuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {# Listagem agrupada por função #}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-ul me-2"></i>Usuários cadastrados</span>
+                <span class="badge rounded-pill text-bg-primary">{{ total_usuarios }}</span>
+            </div>
+
+            {% if usuarios_por_funcao %}
+                {% for funcao, usuarios_grupo in usuarios_por_funcao.items() %}
+                <div class="px-3 pt-3 pb-2 d-flex align-items-center gap-2 {{ 'border-top' if not loop.first }}">
+                    {{ badge_funcao(funcao, icones_funcoes) }}
+                    <small class="text-muted">{{ usuarios_grupo|length }} {{ 'usuário' if usuarios_grupo|length == 1 else 'usuários' }}</small>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 70px;">ID</th>
+                                <th>Nome</th>
+                                <th class="d-none d-md-table-cell">Criado em</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios_grupo %}
+                            <tr>
+                                <td class="text-muted">#{{ u.id }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ u.nome }}</div>
+                                    {% if u.username %}<small class="text-muted">@{{ u.username }}</small>{% endif %}
+                                </td>
+                                <td class="d-none d-md-table-cell small text-muted">
+                                    {% if u.criado_em %}{{ moment(u.criado_em).format('DD/MM/YY HH:mm') }}{% else %}—{% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <a href="{{ url_for('users.editar_usuario', usuario_id=u.id) }}"
+                                           class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <i class="bi bi-pencil"></i><span class="visually-hidden">Editar</span>
+                                        </a>
+                                        {% if u.funcao != funcoes[-1] %}
+                                        <form method="POST" action="{{ url_for('users.promover_usuario', usuario_id=u.id) }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Promover">
+                                                <i class="bi bi-arrow-up"></i><span class="visually-hidden">Promover</span>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        {% if u.funcao != funcoes[0] %}
+                                        <form method="POST" action="{{ url_for('users.rebaixar_usuario', usuario_id=u.id) }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Rebaixar">
+                                                <i class="bi bi-arrow-down"></i><span class="visually-hidden">Rebaixar</span>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        <form method="POST" action="{{ url_for('users.deletar_usuario', usuario_id=u.id) }}"
+                                              data-confirmar="Tem certeza que deseja DELETAR o usuário &quot;{{ u.nome }}&quot;? Esta ação não pode ser desfeita.">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Deletar">
+                                                <i class="bi bi-trash"></i><span class="visually-hidden">Deletar</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <h3 class="h5">Nenhum usuário cadastrado</h3>
+                    <p class="mb-0">Use o formulário acima para cadastrar o primeiro.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ============ COLUNA LATERAL ============ #}
+    <div class="col-lg-4 d-flex flex-column gap-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Funções em uso</div>
+            <div class="card-body">
+                {% set percent = (funcoes_em_uso / total_funcoes * 100)|round|int if total_funcoes > 0 else 0 %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="fw-semibold">{{ funcoes_em_uso }} de {{ total_funcoes }}</span>
+                    <span class="text-muted">{{ percent }}%</span>
+                </div>
+                <div class="progress" role="progressbar" aria-valuenow="{{ percent }}" aria-valuemin="0" aria-valuemax="100" style="height: 8px;">
+                    <div class="progress-bar bg-success" style="width: {{ percent }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-envelope me-2"></i>Notificações por e-mail</div>
+            <ul class="list-group list-group-flush small">
+                <li class="list-group-item">
+                    <div class="fw-semibold"><i class="bi bi-check-circle text-success me-1"></i>Sempre</div>
+                    <code>{{ email_institucional }}</code>
+                </li>
+                <li class="list-group-item">
+                    <div class="fw-semibold"><i class="bi bi-ui-checks text-warning me-1"></i>Opcional (checkbox)</div>
+                    <code>{{ email_professor }}</code>
+                </li>
+                <li class="list-group-item">
+                    <div class="fw-semibold"><i class="bi bi-plus-circle text-info me-1"></i>Opcional (digitado)</div>
+                    <span class="text-muted">Campo “E-mail adicional”</span>
+                </li>
+            </ul>
+            <div class="card-footer d-flex gap-2">
+                <a href="{{ url_for('emails.emails_enviados') }}" class="btn btn-sm btn-outline-secondary flex-fill">
+                    <i class="bi bi-clock-history me-1"></i>Histórico
+                </a>
+                <form method="POST" action="{{ url_for('users.testar_email') }}" class="flex-fill d-flex">
+                    <button type="submit" class="btn btn-sm btn-success flex-fill"><i class="bi bi-send me-1"></i>Testar envio</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-diagram-3 me-2"></i>Hierarquia</div>
+            <ul class="list-group list-group-flush">
+                {% for funcao, descricao in [('Administrator', 'Acesso total'), ('Moderator', 'Acesso intermediário'), ('User', 'Acesso básico')] %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ badge_funcao(funcao, icones_funcoes) }}
+                    <small class="text-muted">{{ descricao }}</small>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% from "_macros.html" import lista_atividades %}
+{% block title %}Início — PTBDSWS{% endblock %}
+
+{#
+    Semana 16 — a home tem TRÊS estados:
+      1. anônimo ............. "Olá, Desconhecido!" e mais nada
+      2. logado sem confirmar  "Olá, Fulano!" + aviso de confirmação pendente
+      3. logado e confirmado . relação de usuários + atividades
+
+    `acesso_liberado` vem do context processor (app/__init__.py).
+    `current_user.nome` funciona até para o anônimo, graças à classe
+    UsuarioAnonimo (app/models.py), que devolve "Desconhecido".
+#}
+
+{% block content %}
+
+{# ================================================================
+   ESTADO 1 — ANÔNIMO
+   ================================================================ #}
+{% if not current_user.is_authenticated %}
+<section class="hero-gate">
+    <span class="hero-gate-icon"><i class="bi bi-person-fill-lock"></i></span>
+    <h1 class="display-5 fw-bold mb-2">Olá, {{ current_user.nome }}!</h1>
+    <p class="lead text-muted mb-4">Entre na sua conta para acessar as informações do sistema.</p>
+    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-4">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+        </a>
+        <a href="{{ url_for('auth.cadastro') }}" class="btn btn-outline-secondary btn-lg px-4">Criar conta</a>
+    </div>
+</section>
+
+{# ================================================================
+   ESTADO 2 — LOGADO, MAS SEM CONFIRMAR O E-MAIL
+   ================================================================ #}
+{% elif not current_user.email_confirmado %}
+<section class="hero-gate">
+    <span class="hero-gate-icon bg-warning-subtle text-warning-emphasis"><i class="bi bi-envelope-exclamation"></i></span>
+    <h1 class="display-6 fw-bold mb-2">Olá, {{ current_user.nome.split()[0] }}!</h1>
+    <p class="lead text-muted mb-4">Falta só um passo para liberar o seu acesso.</p>
+
+    <div class="card text-start mx-auto" style="max-width: 34rem;">
+        <div class="card-body p-4">
+            <div class="d-flex gap-3">
+                <i class="bi bi-shield-exclamation fs-3 text-warning"></i>
+                <div>
+                    <h2 class="h6 mb-1">Conta não confirmada</h2>
+                    <p class="mb-0 text-muted small">
+                        Você não pode acessar o sistema antes de confirmar seu e-mail.
+                        Enviamos um link para <strong class="text-body">{{ current_user.email }}</strong> —
+                        abra a mensagem e clique em <em>Confirmar minha conta</em>.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer d-flex flex-column flex-sm-row gap-2 p-3">
+            <form method="POST" action="{{ url_for('auth.reenviar_confirmacao') }}" class="flex-fill d-flex">
+                <button type="submit" class="btn btn-warning flex-fill">
+                    <i class="bi bi-send me-2"></i>Reenviar e-mail
+                </button>
+            </form>
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary flex-fill">Sair</a>
+        </div>
+    </div>
+</section>
+
+{# ================================================================
+   ESTADO 3 — LOGADO E CONFIRMADO
+   ================================================================ #}
+{% else %}
+<section class="hero mb-4">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <span class="badge rounded-pill bg-white bg-opacity-25 mb-3">
+                <i class="bi bi-patch-check-fill me-1"></i>Conta confirmada
+            </span>
+            <h1 class="display-6 fw-bold mb-2">Olá, {{ current_user.nome.split()[0] }}!</h1>
+            <p class="lead mb-0 opacity-75">Todas as atividades de Desenvolvimento Web Servidor em um só lugar.</p>
+        </div>
+        <div class="col-lg-5">
+            <div class="hero-stats">
+                <div><span class="stat-value">{{ atividades|length }}</span><small>atividades</small></div>
+                <div><span class="stat-value">{{ usuarios|length }}</span><small>usuários</small></div>
+                <div><span class="stat-value">{{ total_emails_badge }}</span><small>e-mails</small></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4">
+    {# ---------- Relação de usuários cadastrados ---------- #}
+    <div class="col-12">
+        <div class="card" data-filtro>
+            <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                <span><i class="bi bi-people me-2"></i>Usuários cadastrados</span>
+                <small class="text-muted fw-normal">
+                    <i class="bi bi-patch-check-fill text-success me-1"></i>{{ total_confirmados }} de {{ usuarios|length }} confirmados
+                </small>
+            </div>
+            <div class="px-3 pt-3">
+                <label class="launcher-search launcher-search-sm">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" class="launcher-input" placeholder="Filtrar por nome, e-mail ou username…"
+                           aria-label="Filtrar usuários" autocomplete="off" data-filtro-input>
+                </label>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover tabela-usuarios">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>Username</th>
+                            <th class="text-center">Confirmado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in usuarios %}
+                        <tr data-filtro-item data-texto="{{ u.nome }} {{ u.email or '' }} {{ u.username or '' }}"
+                            class="{{ 'linha-voce' if u.id == current_user.id }}">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="avatar avatar-sm {{ '' if u.email_confirmado else 'avatar-muted' }}">{{ u.nome[0]|upper }}</span>
+                                    <span class="fw-semibold text-nowrap">{{ u.nome }}</span>
+                                    {% if u.id == current_user.id %}<span class="badge rounded-pill text-bg-primary">você</span>{% endif %}
+                                </div>
+                            </td>
+                            <td class="text-nowrap">{{ u.email or '—' }}</td>
+                            <td>{% if u.username %}<span class="text-muted">@</span>{{ u.username }}{% else %}—{% endif %}</td>
+                            <td class="text-center">
+                                {% if u.email_confirmado %}
+                                    <span class="badge rounded-pill bg-success-subtle text-success-emphasis"><i class="bi bi-check-lg me-1"></i>Sim</span>
+                                {% else %}
+                                    <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis"><i class="bi bi-x-lg me-1"></i>Não</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="launcher-empty" data-filtro-vazio hidden>Nenhum usuário encontrado.</p>
+        </div>
+    </div>
+
+    {# ---------- Atividades (lista moderna com busca) ---------- #}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-grid me-2"></i>Atividades</span>
+                <small class="text-muted fw-normal d-none d-sm-inline"><i class="bi bi-clock me-1"></i>{{ moment(current_time).format('LLL') }}</small>
+            </div>
+            {{ lista_atividades(atividades, grupos_atividades, grade=True) }}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

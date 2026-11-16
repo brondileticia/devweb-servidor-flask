@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cabecalho %}
+{% block title %}Formulário de Identificação — PTBDSWS{% endblock %}
+
+{% block content %}
+{{ cabecalho('Formulário de Identificação', 'Os dados ficam guardados na sessão do navegador.', 'Aula 050.B') }}
+
+<div class="row g-4">
+    <div class="col-lg-8 d-flex flex-column gap-4">
+        <div class="card">
+            <div class="card-body p-4">
+                <h2 class="h3 mb-3">Olá, {{ nome_completo or 'Estranho' }}!</h2>
+                <div class="row g-3">
+                    {% for rotulo, valor in [
+                        ('A sua instituição de ensino é', instituicao),
+                        ('Está cursando a disciplina de', disciplina),
+                        ('O IP do computador remoto é', remote_ip),
+                        ('O host da aplicação é', host),
+                    ] %}
+                    <div class="col-sm-6">
+                        <div class="stat-label">{{ rotulo }}</div>
+                        {% if valor %}<div class="fw-semibold text-break">{{ valor }}</div>
+                        {% else %}<div class="text-muted fst-italic">None</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pencil-square me-2"></i>Preencha seus dados</div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('main.formulario_identificacao') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="nome" class="form-label">Informe o seu nome</label>
+                            <input type="text" class="form-control" id="nome" name="nome"
+                                   value="{{ nome }}" placeholder="Seu nome" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sobrenome" class="form-label">Informe o seu sobrenome</label>
+                            <input type="text" class="form-control" id="sobrenome" name="sobrenome"
+                                   value="{{ sobrenome }}" placeholder="Seu sobrenome" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="instituicao" class="form-label">Instituição de ensino</label>
+                            <input type="text" class="form-control" id="instituicao" name="instituicao"
+                                   value="{{ instituicao or '' }}" placeholder="Ex.: IFSP">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="disciplina" class="form-label">Disciplina</label>
+                            <select class="form-select" id="disciplina" name="disciplina">
+                                <option value="">Selecione…</option>
+                                {% for disc in disciplinas %}
+                                <option value="{{ disc }}" {{ 'selected' if disciplina == disc }}>{{ disc }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-floppy me-2"></i>Salvar informações
+                        </button>
+                        {% if nome_completo %}
+                        <button type="submit" class="btn btn-outline-secondary"
+                                formaction="{{ url_for('main.limpar_identificacao') }}" formnovalidate>
+                            <i class="bi bi-eraser me-2"></i>Limpar dados
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 d-flex flex-column gap-4">
+        <div class="card text-center">
+            <div class="card-body py-4">
+                <div class="stat-label mb-1">A data e hora local é</div>
+                <div class="fw-bold fs-5">{{ moment(current_time).format('LLLL') }}</div>
+                <small class="text-muted">Isso foi {{ moment(current_time).fromNow(refresh=True) }}.</small>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-activity me-2"></i>Status</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Login</span>
+                    {% if current_user.is_authenticated %}<span class="badge bg-success-subtle text-success-emphasis">Logado</span>
+                    {% else %}<span class="badge text-bg-light border">Não logado</span>{% endif %}
+                </li>
+                <li class="list-group-item d-flex justify-content-between gap-3"><span class="text-muted">Nome</span><span class="text-end">{{ nome_completo or 'Não informado' }}</span></li>
+                <li class="list-group-item d-flex justify-content-between gap-3"><span class="text-muted">Instituição</span><span class="text-end">{{ instituicao or 'Não informada' }}</span></li>
+                <li class="list-group-item d-flex justify-content-between gap-3"><span class="text-muted">Disciplina</span><span class="text-end">{{ disciplina or 'Não informada' }}</span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

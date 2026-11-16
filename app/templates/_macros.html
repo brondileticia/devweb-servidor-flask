@@ -1,0 +1,73 @@
+{# Macros reutilizáveis. Importe com:
+   {% from "_macros.html" import cabecalho, badge_funcao, lista_atividades %} #}
+
+{% macro cabecalho(titulo, subtitulo=None, etiqueta=None) %}
+<div class="page-head d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
+    <div>
+        {% if etiqueta %}<span class="eyebrow">{{ etiqueta }}</span>{% endif %}
+        <h1>{{ titulo }}</h1>
+        {% if subtitulo %}<p>{{ subtitulo }}</p>{% endif %}
+    </div>
+    {% if caller %}<div class="d-flex gap-2 flex-wrap">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro badge_funcao(funcao, icones) %}
+{% set info = icones.get(funcao, {'icone': 'bi-person', 'cor': 'secondary'}) %}
+<span class="badge rounded-pill bg-{{ info.cor }}-subtle text-{{ info.cor }}-emphasis border border-{{ info.cor }}-subtle">
+    <i class="bi {{ info.icone }} me-1"></i>{{ funcao }}
+</span>
+{% endmacro %}
+
+
+{# ------------------------------------------------------------------
+   Lista de atividades no estilo "launcher" (busca + teclado).
+   Usada na home e na paleta de comandos (Ctrl+K).
+   O JavaScript que filtra está em static/js/app.js (procure "data-filtro").
+   ------------------------------------------------------------------ #}
+
+{% macro item_atividade(a) %}
+{% set url = url_for(a.endpoint) %}
+<a href="{{ url }}" class="launch-item" data-filtro-item
+   data-texto="{{ a.titulo }} {{ a.descricao }} {{ a.palavras }} {{ url }}">
+    <span class="icon-chip bg-{{ a.cor }}-subtle text-{{ a.cor }}-emphasis"><i class="bi {{ a.icone }}"></i></span>
+    <span class="launch-text">
+        <span class="launch-title">{{ a.titulo }}</span>
+        <span class="launch-desc">{{ a.descricao }}</span>
+    </span>
+    <code class="launch-path d-none d-md-inline">{{ url }}</code>
+    <i class="bi bi-arrow-right launch-arrow" aria-hidden="true"></i>
+</a>
+{% endmacro %}
+
+{% macro lista_atividades(atividades, grupos, atalho='/', grade=False) %}
+<div class="launcher {{ 'launcher-grade' if grade }}" data-filtro>
+    <label class="launcher-search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" class="launcher-input" placeholder="Buscar atividade…"
+               aria-label="Buscar atividade" autocomplete="off" data-filtro-input>
+        <kbd class="d-none d-md-inline">{{ atalho }}</kbd>
+    </label>
+
+    <div class="launcher-body">
+        {% for chave, nome in grupos %}
+            {% set itens = atividades|selectattr('grupo', 'equalto', chave)|list %}
+            {% if itens %}
+            <section class="launcher-group" data-filtro-grupo>
+                <h3 class="launcher-group-title">{{ nome }}</h3>
+                {% for a in itens %}{{ item_atividade(a) }}{% endfor %}
+            </section>
+            {% endif %}
+        {% endfor %}
+        <p class="launcher-empty" data-filtro-vazio hidden>
+            <i class="bi bi-emoji-neutral me-1"></i>Nenhuma atividade encontrada.
+        </p>
+    </div>
+
+    <div class="launcher-foot d-none d-md-flex">
+        <span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+        <span><kbd>Enter</kbd> abrir</span>
+        <span class="ms-auto"><kbd>Ctrl</kbd><kbd>K</kbd> de qualquer página</span>
+    </div>
+</div>
+{% endmacro %}

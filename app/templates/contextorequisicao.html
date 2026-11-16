@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cabecalho %}
+{% block title %}Contexto da Requisição — PTBDSWS{% endblock %}
+
+{% block content %}
+{{ cabecalho('Contexto da Requisição HTTP', 'Olá, ' ~ aluno.nome.split()[0] ~ '! Estes são os detalhes técnicos da sua requisição.', 'Aula 040') }}
+
+{% if 'Edg/' in user_agent %}{% set navegador = ('Microsoft Edge', 'bi-browser-edge') %}
+{% elif 'Chrome' in user_agent %}{% set navegador = ('Google Chrome', 'bi-browser-chrome') %}
+{% elif 'Firefox' in user_agent %}{% set navegador = ('Mozilla Firefox', 'bi-browser-firefox') %}
+{% elif 'Safari' in user_agent %}{% set navegador = ('Safari', 'bi-browser-safari') %}
+{% else %}{% set navegador = ('Não identificado', 'bi-question-circle') %}{% endif %}
+
+{% if 'Windows' in user_agent %}{% set so = ('Windows', 'bi-windows') %}
+{% elif 'Android' in user_agent %}{% set so = ('Android', 'bi-android2') %}
+{% elif 'iPhone' in user_agent or 'iPad' in user_agent %}{% set so = ('iOS', 'bi-apple') %}
+{% elif 'Mac' in user_agent %}{% set so = ('macOS', 'bi-apple') %}
+{% elif 'Linux' in user_agent %}{% set so = ('Linux', 'bi-ubuntu') %}
+{% else %}{% set so = ('Não identificado', 'bi-question-circle') %}{% endif %}
+
+<div class="row g-3 mb-4">
+    {% for rotulo, valor, icone, cor in [
+        ('Navegador', navegador[0], navegador[1], 'primary'),
+        ('Sistema operacional', so[0], so[1], 'success'),
+        ('IP remoto', remote_ip, 'bi-pc-display', 'warning'),
+        ('Host', host, 'bi-globe2', 'info'),
+    ] %}
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <span class="icon-chip bg-{{ cor }}-subtle text-{{ cor }}-emphasis"><i class="bi {{ icone }}"></i></span>
+                <div class="min-w-0">
+                    <div class="stat-label">{{ rotulo }}</div>
+                    <div class="fw-bold text-break">{{ valor }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-file-earmark-code me-2"></i>User-Agent completo</div>
+            <div class="card-body">
+                <pre class="bg-body-tertiary border rounded-3 p-3 mb-0 small text-wrap text-break"><code>{{ user_agent }}</code></pre>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-list-columns me-2"></i>Resumo da requisição</div>
+            <div class="table-responsive">
+                <table class="table">
+                    <tbody>
+                        <tr><th class="text-muted fw-medium">Método</th><td><span class="badge text-bg-primary">{{ metodo }}</span></td></tr>
+                        <tr><th class="text-muted fw-medium">Protocolo</th><td>{{ protocolo }}</td></tr>
+                        <tr>
+                            <th class="text-muted fw-medium">Tipo de IP</th>
+                            <td>
+                                {% if ip_privado is none %}<span class="badge text-bg-secondary">Desconhecido</span>
+                                {% elif ip_privado %}<span class="badge bg-warning-subtle text-warning-emphasis">IP privado / local</span>
+                                {% else %}<span class="badge bg-info-subtle text-info-emphasis">IP público</span>{% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted fw-medium">Ambiente</th>
+                            <td>
+                                {% if 'pythonanywhere' in host %}<span class="badge bg-success-subtle text-success-emphasis">PythonAnywhere</span>
+                                {% elif 'localhost' in host or '127.0.0.1' in host %}<span class="badge text-bg-light border">Servidor local</span>
+                                {% else %}<span class="badge text-bg-light border">Outro</span>{% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

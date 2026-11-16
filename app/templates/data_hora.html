@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cabecalho %}
+{% block title %}Data e Hora — PTBDSWS{% endblock %}
+
+{% block content %}
+{{ cabecalho('Data e Hora', 'Demonstração de herança de templates, Bootstrap e Moment.js.', 'Aula 040') }}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-speedometer2 me-2"></i>Dados da última atualização</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-primary-subtle h-100">
+                            <div class="small fw-semibold text-primary-emphasis mb-1"><i class="bi bi-calendar3 me-1"></i>Data e hora local</div>
+                            <div class="fs-5 fw-bold">{{ moment(current_time).format('LLLL') }}</div>
+                            <small class="text-muted">Formato curto: {{ moment(current_time).format('LLL') }}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-success-subtle h-100">
+                            <div class="small fw-semibold text-success-emphasis mb-1"><i class="bi bi-hourglass-split me-1"></i>Tempo relativo</div>
+                            <div class="fs-5 fw-bold">{{ moment(current_time).fromNow(refresh=True) }}</div>
+                            <small class="text-muted">Atualiza sozinho a cada minuto</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="row g-3 text-center text-md-start">
+                    <div class="col-md-4">
+                        <div class="stat-label">Timestamp Unix</div>
+                        <code>{{ moment(current_time).format('X') }}</code>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-label">Dia da semana</div>
+                        <code>{{ moment(current_time).format('dddd') }}</code>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-label">Hora no servidor</div>
+                        <code>UTC (convertida no navegador)</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            {% for nome, descricao, link, icone, cor in [
+                ('Flask', 'Microframework web em Python', 'https://flask.palletsprojects.com/', 'bi-cup-hot', 'info'),
+                ('Bootstrap', 'Framework CSS responsivo', 'https://getbootstrap.com/docs/5.3/', 'bi-bootstrap', 'primary'),
+                ('Moment.js', 'Formatação de datas em JavaScript', 'https://momentjs.com/', 'bi-calendar-check', 'warning'),
+            ] %}
+            <div class="col-md-4">
+                <a href="{{ link }}" target="_blank" rel="noopener" class="card card-link h-100">
+                    <div class="card-body">
+                        <span class="icon-chip bg-{{ cor }}-subtle text-{{ cor }}-emphasis mb-3"><i class="bi {{ icone }}"></i></span>
+                        <h3 class="h6 mb-1">{{ nome }}</h3>
+                        <p class="small text-muted mb-0">{{ descricao }}</p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-4 text-center">
+            <div class="card-body py-4">
+                <div class="stat-label mb-2">Hora da requisição</div>
+                <div class="display-5 fw-bold text-primary">{{ moment(current_time).format('HH:mm:ss') }}</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>Sobre esta página</div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0 d-grid gap-2">
+                    <li><i class="bi bi-check2 text-success me-2"></i>Herança de templates</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i>Layout com Bootstrap 5</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i>Moment.js para datas</li>
+                    <li><i class="bi bi-check2 text-success me-2"></i>Templates Jinja2</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
